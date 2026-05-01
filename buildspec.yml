@@ -11,7 +11,7 @@ phases:
     commands:
       - echo "Installing pnpm..."
       - corepack enable
-      - corepack prepare pnpm@latest --activate
+      - corepack prepare pnpm@9.12.3 --activate
       - pnpm config set store-dir .pnpm-store
       - echo "Installing dependencies..."
       - pnpm install --frozen-lockfile

@@ -10,4 +10,9 @@ export class AuthController {
   signIn(@Body() signInDto: Record<string, any>) {
     return this.authService.login(signInDto.email, signInDto.password);
   }
+
+  @Post('register')
+  signUp(@Body() signUpDto: Record<string, any>) {
+    return this.authService.register(signUpDto.email, signUpDto.password, signUpDto.name);
+  }
 }
