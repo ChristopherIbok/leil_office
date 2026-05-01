@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: leilportal-web
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: leilportal-web
+  template:
+    metadata:
+      labels:
+        app: leilportal-web
+    spec:
+      containers:
+        - name: web
+          image: leilportal/web:0.1.0
+          ports:
+            - containerPort: 3000
+          env:
+            - name: NEXT_PUBLIC_API_URL
+              value: "https://api.leilportal.example"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: leilportal-web
+spec:
+  selector:
+    app: leilportal-web
+  ports:
+    - port: 3000
+      targetPort: 3000

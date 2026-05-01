@@ -1,0 +1,22 @@
+{
+  "name": "leilportal",
+  "version": "0.1.0",
+  "private": true,
+  "description": "LEILPORTAL monorepo for a secure digital office SaaS.",
+  "scripts": {
+    "dev": "pnpm --parallel dev",
+    "dev:api": "pnpm --filter @leilportal/api dev",
+    "dev:web": "pnpm --filter @leilportal/web dev",
+    "build": "pnpm --recursive build",
+    "lint": "pnpm --recursive lint",
+    "prisma:generate": "pnpm --filter @leilportal/api prisma:generate",
+    "prisma:migrate": "pnpm --filter @leilportal/api prisma:migrate"
+  },
+  "packageManager": "pnpm@9.12.3",
+  "engines": {
+    "node": ">=20.11.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3"
+  }
+}
