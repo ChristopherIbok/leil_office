@@ -21,17 +21,17 @@ export class AuthService {
     private readonly config: ConfigService
   ) {}
 
-  async register(dto: RegisterDto) {
-    const existing = await this.prisma.user.findUnique({ where: { email: dto.email } });
+  async register({ name, email, password, role }: RegisterDto) {
+    const existing = await this.prisma.user.findUnique({ where: { email } });
     if (existing) throw new ConflictException("Email is already registered.");
 
-    const password = await bcrypt.hash(dto.password, 12);
+    const hashedPassword = await bcrypt.hash(password, 12);
     const user = await this.prisma.user.create({
       data: {
-        name: dto.name,
-        email: dto.email.toLowerCase(),
-        password,
-        role: dto.role ?? "TEAM_MEMBER"
+        name,
+        email: email.toLowerCase(),
+        password: hashedPassword,
+        role: role ?? "TEAM_MEMBER"
       },
       select: userSelect
     });
@@ -39,11 +39,11 @@ export class AuthService {
     return this.withToken(user);
   }
 
-  async login(dto: LoginDto) {
-    const user = await this.prisma.user.findUnique({ where: { email: dto.email.toLowerCase() } });
+  async login({ email, password }: LoginDto) {
+    const user = await this.prisma.user.findUnique({ where: { email: email.toLowerCase() } });
     if (!user) throw new UnauthorizedException("Invalid email or password.");
 
-    const valid = await bcrypt.compare(dto.password, user.password);
+    const valid = await bcrypt.compare(password, user.password);
     if (!valid) throw new UnauthorizedException("Invalid email or password.");
 
     return this.withToken({

@@ -27,6 +27,27 @@ export class ProjectsService {
     });
   }
 
+  async findOne(id: string, userId: string) {
+    const project = await this.prisma.project.findFirst({
+      where: {
+        id,
+        OR: [
+          { managerId: userId },
+          { members: { some: { id: userId } } },
+          { clientId: userId },
+        ],
+      },
+      include: {
+        manager: true,
+        client: true,
+        members: true,
+      },
+    });
+
+    if (!project) throw new Error('Project not found or access denied');
+    return project;
+  }
+
   async findAllForUser(userId: string, query: GetProjectsDto) {
     const { status, skip, take } = query;
 

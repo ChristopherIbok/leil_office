@@ -6,7 +6,10 @@ import {
   ConnectedSocket,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
+import { UseGuards } from '@nestjs/common';
+import { WsJwtAuthGuard } from './ws-jwt-auth.guard';
 
+@UseGuards(WsJwtAuthGuard)
 @WebSocketGateway({
   cors: {
     origin: '*', // In production, replace with your specific frontend URL

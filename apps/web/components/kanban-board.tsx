@@ -2,6 +2,9 @@
 
 import { DndContext, DragEndEvent, useDraggable, useDroppable } from "@dnd-kit/core";
 import { useState } from "react";
+import { useAuthStore } from "../store/auth-store";
+import { apiFetch } from "../lib/api";
+import { TaskModal } from "./task-modal";
 
 const columns = [
   { id: "TODO", label: "To Do" },
@@ -10,34 +13,88 @@ const columns = [
   { id: "DONE", label: "Done" }
 ];
 
-const seedTasks = [
-  { id: "1", title: "Finalize kickoff agenda", status: "TODO", owner: "Nia", tag: "Client" },
-  { id: "2", title: "Implement auth guard tests", status: "IN_PROGRESS", owner: "Sam", tag: "Backend" },
-  { id: "3", title: "Review document permissions", status: "REVIEW", owner: "Leah", tag: "Security" },
-  { id: "4", title: "Publish workspace brief", status: "DONE", owner: "Mika", tag: "Ops" }
-];
+interface Task {
+  id: string;
+  title: string;
+  description?: string | null;
+  status: "TODO" | "IN_PROGRESS" | "REVIEW" | "DONE";
+  assignee?: { id: string; name: string; email: string } | null;
+  dueDate?: string | null;
+  tags: string[];
+}
 
-export function KanbanBoard() {
-  const [tasks, setTasks] = useState(seedTasks);
+interface KanbanBoardProps {
+  initialTasks: Task[];
+}
 
-  function onDragEnd(event: DragEndEvent) {
+export function KanbanBoard({ initialTasks }: KanbanBoardProps) {
+  const [tasks, setTasks] = useState<Task[]>(initialTasks);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const session = useAuthStore((state) => state.session);
+
+  async function onDragEnd(event: DragEndEvent) {
     const overId = String(event.over?.id ?? "");
     if (!overId) return;
-    setTasks((current) => current.map((task) => (task.id === event.active.id ? { ...task, status: overId } : task)));
+
+    const taskId = event.active.id as string;
+    
+    setTasks((current) => 
+      current.map((task) => 
+        task.id === taskId ? { ...task, status: overId as Task["status"] } : task
+      )
+    );
+
+    if (session) {
+      try {
+        await apiFetch(`/tasks/${taskId}`, {
+          method: "PATCH",
+          body: JSON.stringify({ status: overId })
+        }, session.accessToken);
+      } catch (err) {
+        console.error("Failed to update task:", err);
+        setTasks((current) => 
+          current.map((task) => 
+            task.id === taskId ? { ...task, status: initialTasks.find(t => t.id === taskId)?.status ?? task.status } : task
+          )
+        );
+      }
+    }
+  }
+
+  function handleTaskUpdate(updatedTask: Task) {
+    setTasks((current) => 
+      current.map((task) => task.id === updatedTask.id ? updatedTask : task)
+    );
   }
 
   return (
-    <DndContext onDragEnd={onDragEnd}>
-      <div className="grid gap-4 xl:grid-cols-4">
-        {columns.map((column) => (
-          <KanbanColumn key={column.id} id={column.id} label={column.label} tasks={tasks.filter((task) => task.status === column.id)} />
-        ))}
-      </div>
-    </DndContext>
+    <>
+      <DndContext onDragEnd={onDragEnd}>
+        <div className="grid gap-4 xl:grid-cols-4">
+          {columns.map((column) => (
+            <KanbanColumn 
+              key={column.id} 
+              id={column.id} 
+              label={column.label} 
+              tasks={tasks.filter((task) => task.status === column.id)}
+              onTaskClick={setSelectedTask}
+            />
+          ))}
+        </div>
+      </DndContext>
+      
+      {selectedTask && (
+        <TaskModal
+          task={selectedTask}
+          onClose={() => setSelectedTask(null)}
+          onUpdate={handleTaskUpdate}
+        />
+      )}
+    </>
   );
 }
 
-function KanbanColumn({ id, label, tasks }: { id: string; label: string; tasks: typeof seedTasks }) {
+function KanbanColumn({ id, label, tasks, onTaskClick }: { id: string; label: string; tasks: Task[]; onTaskClick: (task: Task) => void }) {
   const { setNodeRef, isOver } = useDroppable({ id });
 
   return (
@@ -45,23 +102,33 @@ function KanbanColumn({ id, label, tasks }: { id: string; label: string; tasks: 
       <h3 className="mb-3 text-sm font-semibold">{label}</h3>
       <div className="space-y-3">
         {tasks.map((task) => (
-          <TaskCard key={task.id} task={task} />
+          <TaskCard key={task.id} task={task} onClick={() => onTaskClick(task)} />
         ))}
       </div>
     </div>
   );
 }
 
-function TaskCard({ task }: { task: (typeof seedTasks)[number] }) {
+function TaskCard({ task, onClick }: { task: Task; onClick: () => void }) {
   const { attributes, listeners, setNodeRef, transform } = useDraggable({ id: task.id });
   const style = transform ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)` } : undefined;
 
   return (
-    <button ref={setNodeRef} style={style} {...listeners} {...attributes} className="w-full cursor-grab rounded-md border border-line bg-white p-3 text-left shadow-sm active:cursor-grabbing">
+    <button 
+      ref={setNodeRef} 
+      style={style} 
+      {...listeners} 
+      {...attributes} 
+      onClick={(e) => {
+        e.stopPropagation();
+        onClick();
+      }}
+      className="w-full cursor-grab rounded-md border border-line bg-white p-3 text-left shadow-sm active:cursor-grabbing hover:border-brand"
+    >
       <p className="text-sm font-medium">{task.title}</p>
       <div className="mt-3 flex items-center justify-between text-xs text-muted">
-        <span>{task.owner}</span>
-        <span className="rounded-md bg-white px-2 py-1 text-accent ring-1 ring-line">{task.tag}</span>
+        <span>{task.assignee?.name ?? "Unassigned"}</span>
+        {task.tags[0] && <span className="rounded-md bg-white px-2 py-1 text-accent ring-1 ring-line">{task.tags[0]}</span>}
       </div>
     </button>
   );

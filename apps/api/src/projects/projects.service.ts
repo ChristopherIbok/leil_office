@@ -18,8 +18,14 @@ export class ProjectsService {
     });
   }
 
-  findAll() {
+  findAll(search?: string) {
     return this.prisma.project.findMany({
+      where: search ? {
+        OR: [
+          { name: { contains: search, mode: "insensitive" } },
+          { description: { contains: search, mode: "insensitive" } }
+        ]
+      } : undefined,
       include: {
         client: { select: { id: true, name: true, email: true } },
         _count: { select: { tasks: true, files: true, members: true } }

@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post } from "@nestjs/common";
+import { Body, Controller, Get, Post, Query } from "@nestjs/common";
 import { AuthUser, CurrentUser } from "../common/decorators/current-user.decorator";
 import { CreateTimeLogDto } from "./dto";
 import { TimeService } from "./time.service";
@@ -15,5 +15,10 @@ export class TimeController {
   @Get("me")
   findMine(@CurrentUser() user: AuthUser) {
     return this.time.findMine(user.sub);
+  }
+
+  @Get()
+  findByProject(@Query("projectId") projectId: string) {
+    return this.time.findByProject(projectId);
   }
 }

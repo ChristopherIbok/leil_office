@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query, UseGuards, ParseIntPipe } from '@nestjs/common';
 import { TasksService } from './tasks.service';
 import { CreateTaskDto } from './create-task.dto';
 import { UpdateTaskDto } from './update-task.dto';
@@ -19,6 +19,16 @@ export class TasksController {
   @Get()
   findAll(@Query('projectId') projectId: string, @CurrentUser() user: User) {
     return this.tasksService.findAllByProject(projectId, user.id);
+  }
+
+  @Post(':id/reorder')
+  reorder(
+    @Param('id') id: string,
+    @Body('status') status: TaskStatus,
+    @Body('position', ParseIntPipe) position: number,
+    @CurrentUser() user: User,
+  ) {
+    return this.tasksService.reorder(id, status, position, user.id);
   }
 
   @Patch(':id')

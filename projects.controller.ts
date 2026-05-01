@@ -1,4 +1,4 @@
-import { Controller, Post, Body, UseGuards, Get, Query } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Get, Query, Param } from '@nestjs/common';
 import { ProjectsService } from './projects.service';
 import { CreateProjectDto } from './create-project.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
@@ -17,6 +17,11 @@ export class ProjectsController {
     @CurrentUser() user: User,
   ) {
     return this.projectsService.create(createProjectDto, user.id);
+  }
+
+  @Get(':id')
+  async findOne(@Param('id') id: string, @CurrentUser() user: User) {
+    return this.projectsService.findOne(id, user.id);
   }
 
   @Get()

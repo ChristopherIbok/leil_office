@@ -1,8 +1,9 @@
-import { Injectable, ForbiddenException, NotFoundException } from '@nestjs/common';
+import { Injectable, ForbiddenException, NotFoundException, InternalServerErrorException } from '@nestjs/common';
 import { PrismaService } from './prisma.service';
 import { CreateTaskDto } from './create-task.dto';
 import { UpdateTaskDto } from './update-task.dto';
 import { TasksGateway } from './tasks.gateway';
+import { TaskStatus } from '@prisma/client';
 
 @Injectable()
 export class TasksService {
@@ -12,26 +13,23 @@ export class TasksService {
   ) {}
 
   async create(dto: CreateTaskDto, userId: string) {
-    // Verify user has access to the project (Manager or Member)
-    const project = await this.prisma.project.findFirst({
-      where: {
-        id: dto.projectId,
-        OR: [
-          { managerId: userId },
-          { members: { some: { id: userId } } },
-        ],
-      },
+    await this.checkProjectAccess(dto.projectId, userId);
+
+    // Find the highest position in the target column to place the new task at the end
+    const status = dto.status || TaskStatus.TODO;
+    const lastTask = await this.prisma.task.findFirst({
+      where: { projectId: dto.projectId, status },
+      orderBy: { position: 'desc' },
     });
 
-    if (!project) {
-      throw new ForbiddenException('You do not have access to create tasks in this project');
-    }
+    const position = dto.position ?? (lastTask ? lastTask.position + 1 : 0);
 
     const task = await this.prisma.task.create({
       data: {
         title: dto.title,
         description: dto.description,
-        status: dto.status,
+        status,
+        position,
         projectId: dto.projectId,
         assigneeId: dto.assigneeId,
         dueDate: dto.dueDate ? new Date(dto.dueDate) : null,
@@ -42,22 +40,26 @@ export class TasksService {
     return task;
   }
 
-  async findAllByProject(projectId: string, userId: string) {
-    // Verify access (Manager, Member, or the Client of the project)
+  private async checkProjectAccess(projectId: string, userId: string, allowClient = false) {
     const project = await this.prisma.project.findFirst({
       where: {
         id: projectId,
         OR: [
           { managerId: userId },
           { members: { some: { id: userId } } },
-          { clientId: userId },
+          ...(allowClient ? [{ clientId: userId }] : []),
         ],
       },
     });
 
     if (!project) {
-      throw new ForbiddenException('You do not have access to this project');
+      throw new ForbiddenException('Project access denied');
     }
+    return project;
+  }
+
+  async findAllByProject(projectId: string, userId: string) {
+    await this.checkProjectAccess(projectId, userId, true);
 
     return this.prisma.task.findMany({
       where: { projectId },
@@ -66,31 +68,14 @@ export class TasksService {
           select: { id: true, name: true, email: true },
         },
       },
-      orderBy: { createdAt: 'asc' },
+      orderBy: { position: 'asc' },
     });
   }
 
   async update(id: string, dto: UpdateTaskDto, userId: string) {
-    const task = await this.prisma.task.findUnique({
-      where: { id },
-    });
-
+    const task = await this.prisma.task.findUnique({ where: { id } });
     if (!task) throw new NotFoundException('Task not found');
-
-    // Verify access via project participation
-    const project = await this.prisma.project.findFirst({
-      where: {
-        id: task.projectId,
-        OR: [
-          { managerId: userId },
-          { members: { some: { id: userId } } },
-        ],
-      },
-    });
-
-    if (!project) {
-      throw new ForbiddenException('You do not have permission to update tasks in this project');
-    }
+    await this.checkProjectAccess(task.projectId, userId);
 
     const updatedTask = await this.prisma.task.update({
       where: { id },
@@ -104,18 +89,67 @@ export class TasksService {
     return updatedTask;
   }
 
+  async reorder(id: string, newStatus: TaskStatus, newPosition: number, userId: string) {
+    const task = await this.prisma.task.findUnique({ where: { id } });
+    if (!task) throw new NotFoundException('Task not found');
+    await this.checkProjectAccess(task.projectId, userId);
+
+    const oldStatus = task.status;
+    const oldPosition = task.position;
+
+    return this.prisma.$transaction(async (tx) => {
+      if (oldStatus === newStatus) {
+        if (oldPosition < newPosition) {
+          // Moving down: decrement tasks between old and new
+          await tx.task.updateMany({
+            where: {
+              projectId: task.projectId,
+              status: newStatus,
+              position: { gt: oldPosition, lte: newPosition },
+            },
+            data: { position: { decrement: 1 } },
+          });
+        } else if (oldPosition > newPosition) {
+          // Moving up: increment tasks between new and old
+          await tx.task.updateMany({
+            where: {
+              projectId: task.projectId,
+              status: newStatus,
+              position: { gte: newPosition, lt: oldPosition },
+            },
+            data: { position: { increment: 1 } },
+          });
+        }
+      } else {
+        // Moving columns: Close gap in old column
+        await tx.task.updateMany({
+          where: { projectId: task.projectId, status: oldStatus, position: { gt: oldPosition } },
+          data: { position: { decrement: 1 } },
+        });
+        // Make room in new column
+        await tx.task.updateMany({
+          where: { projectId: task.projectId, status: newStatus, position: { gte: newPosition } },
+          data: { position: { increment: 1 } },
+        });
+      }
+
+      const updated = await tx.task.update({
+        where: { id },
+        data: { status: newStatus, position: newPosition },
+      });
+
+      this.tasksGateway.notifyTaskUpdate(updated.projectId, { action: 'reordered', task: updated });
+      return updated;
+    });
+  }
+
   async remove(id: string, userId: string) {
-    // Delete permission restricted to Project Manager for data integrity
     const task = await this.prisma.task.findUnique({
       where: { id },
       include: { project: true },
     });
-
     if (!task) throw new NotFoundException('Task not found');
-
-    if (task.project.managerId !== userId) {
-      throw new ForbiddenException('Only the project manager can delete tasks');
-    }
+    await this.checkProjectAccess(task.projectId, userId, false);
 
     const deletedTask = await this.prisma.task.delete({ where: { id } });
     this.tasksGateway.notifyTaskUpdate(deletedTask.projectId, { action: 'deleted', taskId: id });

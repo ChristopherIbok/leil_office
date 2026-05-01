@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from "@nestjs/common";
 import { Roles } from "../common/decorators/roles.decorator";
 import { CreateProjectDto, UpdateProjectDto } from "./dto";
 import { ProjectsService } from "./projects.service";
@@ -8,14 +8,14 @@ export class ProjectsController {
   constructor(private readonly projects: ProjectsService) {}
 
   @Post()
-  @Roles("ADMIN")
+  @Roles("ADMIN", "TEAM_MEMBER")
   create(@Body() dto: CreateProjectDto) {
     return this.projects.create(dto);
   }
 
   @Get()
-  findAll() {
-    return this.projects.findAll();
+  findAll(@Query("search") search?: string) {
+    return this.projects.findAll(search);
   }
 
   @Get(":id")

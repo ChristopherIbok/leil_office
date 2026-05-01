@@ -25,4 +25,12 @@ export class TimeService {
       orderBy: { date: "desc" }
     });
   }
+
+  findByProject(projectId: string) {
+    return this.prisma.timeLog.findMany({
+      where: { task: { projectId } },
+      include: { task: { select: { id: true, title: true } } },
+      orderBy: { date: "desc" }
+    });
+  }
 }

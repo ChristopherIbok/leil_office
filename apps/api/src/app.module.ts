@@ -11,11 +11,13 @@ import { ProjectsModule } from "./projects/projects.module";
 import { TasksModule } from "./tasks/tasks.module";
 import { TimeModule } from "./time/time.module";
 import { UsersModule } from "./users/users.module";
+import { NotificationsModule } from "./notifications/notifications.module";
+import { WebhooksModule } from "./webhooks/webhooks.module";
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
-    ThrottlerModule.forRoot({ ttl: 60, limit: 100 }),
+    ConfigModule.forRoot({ isGlobal: true, envFilePath: '../../.env' }),
+    ThrottlerModule.forRoot([{ ttl: 60000, limit: 100 }]),
     PrismaModule,
     AuthModule,
     UsersModule,
@@ -24,7 +26,9 @@ import { UsersModule } from "./users/users.module";
     ChatModule,
     FilesModule,
     TimeModule,
-    BillingModule
+    BillingModule,
+    NotificationsModule,
+    WebhooksModule
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }]
 })
