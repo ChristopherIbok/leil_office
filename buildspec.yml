@@ -23,8 +23,10 @@ phases:
 
   build:
     commands:
-      - echo "Building API and Web applications..."
-      - pnpm build
+      - echo "Building Backend..."
+      - pnpm --filter @leilportal/api build
+      - echo "Building Frontend..."
+      - pnpm --filter @leilportal/web build
 
   post_build:
     commands:
