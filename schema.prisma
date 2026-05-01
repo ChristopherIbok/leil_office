@@ -35,6 +35,7 @@ model User {
   role          Role      @default(CLIENT)
   projects      Project[] @relation("ProjectParticipants")
   clientProjects Project[] @relation("ClientAccount")
+  managedProjects Project[] @relation("ProjectManager")
   tasks         Task[]    @relation("TaskAssignee")
   comments      Comment[]
   messages      Message[]
@@ -50,6 +51,8 @@ model Project {
   description String?
   status      ProjectStatus @default(PLANNING)
   clientId    String
+  managerId   String
+  manager     User          @relation("ProjectManager", fields: [managerId], references: [id])
   client      User          @relation("ClientAccount", fields: [clientId], references: [id])
   members     User[]        @relation("ProjectParticipants")
   tasks       Task[]

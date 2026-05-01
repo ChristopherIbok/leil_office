@@ -16,6 +16,10 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     const region = configService.get<string>('AWS_REGION');
     const userPoolId = configService.get<string>('AWS_COGNITO_USER_POOL_ID');
 
+    if (!region || !userPoolId) {
+      throw new Error('AWS_REGION or AWS_COGNITO_USER_POOL_ID is missing in environment variables');
+    }
+
     super({
       secretOrKeyProvider: passportJwtSecret({
         cache: true,

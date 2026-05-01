@@ -11,13 +11,13 @@ export class AuthController {
   @Public()
   @Post("register")
   register(@Body() dto: RegisterDto) {
-    return this.auth.register(dto);
+    return this.auth.register(dto.email, dto.password, dto.name);
   }
 
   @Public()
   @Post("login")
   login(@Body() dto: LoginDto) {
-    return this.auth.login(dto);
+    return this.auth.login(dto.email, dto.password);
   }
 
   @Get("me")

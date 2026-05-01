@@ -8,6 +8,9 @@ async function bootstrap() {
   // Set the global prefix for all API routes to /api
   app.setGlobalPrefix('api');
 
+  // Enable CORS for frontend communication
+  app.enableCors();
+
   // Apply the ValidationPipe globally
   app.useGlobalPipes(
     new ValidationPipe({
