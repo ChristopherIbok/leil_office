@@ -4,16 +4,14 @@ frontend:
     preBuild:
       commands:
         - npm install -g pnpm
-        - ls -la
+        - cd leil_office && pnpm install --filter @leilportal/web
     build:
       commands:
-        - if [ -d "leil_office" ]; then cd leil_office; fi
-        - pnpm --filter @leilportal/web build
+        - cd leil_office/apps/web && pnpm run build
   artifacts:
     baseDirectory: leil_office/apps/web/.next
     files:
       - '**/*'
   cache:
     paths:
-      - node_modules/**/*
-      - '*/.next/cache/**/*'
+      - '**/node_modules/**'
