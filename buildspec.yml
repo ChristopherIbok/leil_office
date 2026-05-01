@@ -2,26 +2,38 @@ version: 0.2
 
 env:
   variables:
-    NODE_ENV: production
-    BUILD_DIR: dist
+    NODE_ENV: "production"
 
 phases:
   install:
     runtime-versions:
-      nodejs: 18
+      nodejs: 20
     commands:
-      - echo Installing dependencies...
-      - npm install
+      - echo "Installing pnpm..."
+      - corepack enable
+      - corepack prepare pnpm@latest --activate
+      - echo "Installing dependencies..."
+      - pnpm install --frozen-lockfile
+
+  pre_build:
+    commands:
+      - echo "Generating Prisma Client..."
+      - pnpm prisma:generate
 
   build:
     commands:
-      - echo Building project...
-      - npm run build
+      - echo "Building API and Web applications..."
+      - pnpm build
 
   post_build:
     commands:
-      - echo Build completed
+      - echo "Build completed on `date`"
 
 artifacts:
   files:
-    - '**/*'
+    - 'apps/api/dist/**/*'
+    - 'apps/web/.next/**/*'
+    - 'apps/web/public/**/*'
+    - 'package.json'
+    - 'pnpm-workspace.yaml'
+    - 'node_modules/**/*'
