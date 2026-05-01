@@ -10,6 +10,27 @@ export class AuthService {
     private jwtService: JwtService,
   ) {}
 
+  async validateCognitoUser(payload: any) {
+    // Check if user exists in local DB by email
+    let user = await this.prisma.user.findUnique({
+      where: { email: payload.email },
+    });
+
+    if (!user) {
+      // Create local user record if it doesn't exist (First time login sync)
+      user = await this.prisma.user.create({
+        data: {
+          email: payload.email,
+          name: payload.name || payload['custom:full_name'] || 'User',
+          password: '', // Password is managed by Cognito, not stored locally
+          role: 'CLIENT', // Default role for new users
+        },
+      });
+    }
+
+    return user;
+  }
+
   async register(email: string, pass: string, name: string) {
     const hashedPassword = await bcrypt.hash(pass, 10);
     
