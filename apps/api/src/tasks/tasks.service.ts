@@ -57,7 +57,7 @@ export class TasksService {
       where: { id },
       data: {
         ...rest,
-        dueDate: dueDate ? new Date(dueDate) : undefined,
+        dueDate: dueDate === null ? null : dueDate ? new Date(dueDate) : undefined,
         assignee: assigneeId === null
           ? { disconnect: true }
           : assigneeId
