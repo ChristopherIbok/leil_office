@@ -48,7 +48,7 @@ export default function TeamPage() {
     setInviteLoading(true);
     setInviteError(null);
     try {
-      await apiFetch("/auth/admin/register", {
+      await apiFetch("/users", {
         method: "POST",
         body: JSON.stringify({ name: inviteName, email: inviteEmail, password: invitePassword, role: inviteRole })
       }, session.accessToken);
@@ -74,14 +74,7 @@ export default function TeamPage() {
     }
   }
 
-  const getRoleBadge = (role: string) => {
-    const styles: Record<string, string> = {
-      ADMIN: "bg-purple-100 text-purple-700",
-      TEAM_MEMBER: "bg-blue-100 text-blue-700",
-      CLIENT: "bg-green-100 text-green-700",
-    };
-    return styles[role] || "bg-gray-100 text-gray-700";
-  };
+  const getRoleBadge = (_role: string) => "bg-brand/10 text-brand";
 
   return (
     <>

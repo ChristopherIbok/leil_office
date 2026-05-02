@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Patch } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, Patch, Post } from "@nestjs/common";
 import { Roles } from "../common/decorators/roles.decorator";
 import { UsersService } from "./users.service";
 
@@ -10,6 +10,12 @@ export class UsersController {
   @Roles("ADMIN", "TEAM_MEMBER")
   findAll() {
     return this.users.findAll();
+  }
+
+  @Post()
+  @Roles("ADMIN")
+  create(@Body() dto: { name: string; email: string; password: string; role?: string }) {
+    return this.users.create(dto);
   }
 
   @Get(":id")
