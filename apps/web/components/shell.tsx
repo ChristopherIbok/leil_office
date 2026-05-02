@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type React from "react";
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useAuthStore } from "../store/auth-store";
 import { CreditCard, LayoutDashboard, LogOut, ShieldCheck, FolderOpen, User, Menu, X, Clock, Users, Settings } from "lucide-react";
 import { NotificationsDropdown } from "./notifications-dropdown";
@@ -9,8 +10,14 @@ import { ThemeToggle } from "./theme-toggle";
 
 export function Shell({ children, title }: { children: React.ReactNode; title: string }) {
   const { session, logout } = useAuthStore();
+  const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+
+  function handleLogout() {
+    logout();
+    router.push("/login");
+  }
 
   useEffect(() => {
     setMounted(true);
@@ -82,7 +89,7 @@ export function Shell({ children, title }: { children: React.ReactNode; title: s
             <p className="text-xs text-muted">{session?.user?.email}</p>
           </div>
           <button
-            onClick={() => logout()}
+            onClick={handleLogout}
             className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50"
           >
             <LogOut className="h-4 w-4" />
@@ -114,7 +121,7 @@ export function Shell({ children, title }: { children: React.ReactNode; title: s
             <p className="text-xs text-muted">{session?.user?.email}</p>
           </div>
           <button
-            onClick={() => logout()}
+            onClick={handleLogout}
             className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-50"
           >
             <LogOut className="h-4 w-4" />
