@@ -14,6 +14,7 @@ import { TasksGateway } from './tasks.gateway';
 import awsConfig from './aws.config';
 import { UsersController } from './users.controller';
 import { UsersService } from './users.service';
+import { HealthModule } from './health/health.module';
 
 @Global()
 @Module({
@@ -34,6 +35,7 @@ import { UsersService } from './users.service';
       }),
     }),
     PassportModule.register({ defaultStrategy: 'jwt' }),
+    HealthModule,
   ],
   controllers: [
     AuthController, 

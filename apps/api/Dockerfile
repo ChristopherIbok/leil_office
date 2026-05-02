@@ -1,22 +1,52 @@
-FROM node:20-alpine AS deps
-WORKDIR /app
+# Stage 1: Base image for pnpm environment
+FROM node:20-slim AS base
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
 RUN corepack enable
-COPY package.json pnpm-workspace.yaml tsconfig.base.json ./
-COPY apps/api/package.json apps/api/package.json
-COPY packages/types/package.json packages/types/package.json
-RUN pnpm install --filter @leilportal/api... --frozen-lockfile=false
 
-FROM deps AS build
-COPY apps/api apps/api
-COPY packages packages
+WORKDIR /app
+
+# Stage 2: Build stage
+FROM base AS build
+
+# Copy the workspace configuration and lockfile first to leverage Docker cache
+COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
+
+# Copy all package.json files from the monorepo
+# This allows pnpm to calculate the dependency graph
+COPY apps/api/package.json ./apps/api/
+COPY apps/web/package.json ./apps/web/
+# Add other packages here if you have them, e.g., packages/types/package.json
+
+# Install all dependencies (including devDependencies for building)
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
+
+# Copy the Prisma schema and generate the client
+COPY schema.prisma ./apps/api/prisma/schema.prisma
 RUN pnpm --filter @leilportal/api prisma:generate
+
+# Copy the source code for the API and build it
+COPY apps/api ./apps/api
 RUN pnpm --filter @leilportal/api build
 
-FROM node:20-alpine AS runner
+# Use pnpm deploy to create an isolated production directory
+# This command handles workspace symlinks and prunes devDependencies
+RUN pnpm --filter @leilportal/api --prod deploy /app/deployed-api
+
+# Stage 3: Production runner stage
+FROM node:20-slim AS runner
 WORKDIR /app
+
+# Create a non-privileged user for security
+RUN groupadd -g 1001 nodejs && useradd -u 1001 -g nodejs nextjs
+
+# Copy the deployed application from the build stage
+COPY --from=build --chown=nextjs:nodejs /app/deployed-api ./
+
+USER nextjs
+
+# Set runtime environment variables
 ENV NODE_ENV=production
-RUN corepack enable
-COPY --from=build /app/node_modules node_modules
-COPY --from=build /app/apps/api/dist apps/api/dist
-COPY --from=build /app/apps/api/prisma apps/api/prisma
-CMD ["node", "apps/api/dist/main.js"]
+EXPOSE 4000
+
+CMD ["node", "dist/main.js"]

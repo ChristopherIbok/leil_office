@@ -10,7 +10,7 @@ frontend:
         - pnpm prisma:generate
     build:
       commands:
-        - pnpm --filter @leilportal/web build
+        - NEXT_PUBLIC_API_URL=$API_URL pnpm --filter @leilportal/web build
   artifacts:
     baseDirectory: apps/web/.next
     files:
