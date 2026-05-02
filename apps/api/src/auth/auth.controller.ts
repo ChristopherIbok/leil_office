@@ -1,6 +1,7 @@
 import { Body, Controller, Get, Post } from "@nestjs/common";
 import { CurrentUser, AuthUser } from "../common/decorators/current-user.decorator";
 import { Public } from "../common/decorators/public.decorator";
+import { Roles } from "../common/decorators/roles.decorator";
 import { AuthService } from "./auth.service";
 import { LoginDto, RegisterDto } from "./dto";
 
@@ -11,6 +12,12 @@ export class AuthController {
   @Public()
   @Post("register")
   register(@Body() dto: RegisterDto) {
+    return this.auth.register({ ...dto, role: undefined });
+  }
+
+  @Post("admin/register")
+  @Roles("ADMIN")
+  adminRegister(@Body() dto: RegisterDto) {
     return this.auth.register(dto);
   }
 

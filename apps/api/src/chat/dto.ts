@@ -15,4 +15,12 @@ export class CreateMessageDto {
 
   @IsString()
   content: string;
+
+  @IsOptional()
+  @IsString()
+  attachmentUrl?: string;
+
+  @IsOptional()
+  @IsString()
+  attachmentName?: string;
 }

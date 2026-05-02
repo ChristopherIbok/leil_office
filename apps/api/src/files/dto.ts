@@ -1,4 +1,4 @@
-import { IsInt, IsString, Min } from "class-validator";
+import { IsInt, IsOptional, IsString, Min } from "class-validator";
 
 export class CreateFileRecordDto {
   @IsString()
@@ -22,16 +22,13 @@ export class CreateFileRecordDto {
 }
 
 export class PresignUploadDto {
+  @IsOptional()
   @IsString()
-  projectId: string;
+  projectId?: string;
 
   @IsString()
   name: string;
 
   @IsString()
   mimeType: string;
-
-  @IsInt()
-  @Min(1)
-  size: number;
 }

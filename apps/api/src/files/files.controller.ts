@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post } from "@nestjs/common";
+import { Body, Controller, Delete, Get, Param, Post } from "@nestjs/common";
 import { AuthUser, CurrentUser } from "../common/decorators/current-user.decorator";
 import { Roles } from "../common/decorators/roles.decorator";
 import { CreateFileRecordDto, PresignUploadDto } from "./dto";
@@ -26,5 +26,11 @@ export class FilesController {
       return this.files.findByProjectForClient(projectId, user.sub);
     }
     return this.files.findByProject(projectId);
+  }
+
+  @Delete(":id")
+  @Roles("ADMIN", "TEAM_MEMBER")
+  remove(@CurrentUser() user: AuthUser, @Param("id") id: string) {
+    return this.files.remove(id, user.sub, user.role);
   }
 }

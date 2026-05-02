@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { Send, Video } from "lucide-react";
+import { Send, Video, Paperclip, X, Download } from "lucide-react";
 import { useAuthStore } from "../store/auth-store";
 import { apiFetch } from "../lib/api";
 import { VideoCall, useVideoCall } from "./video-call";
@@ -12,6 +12,8 @@ interface Message {
   senderId: string;
   sender?: { name: string };
   createdAt: string;
+  attachmentUrl?: string;
+  attachmentName?: string;
 }
 
 interface Channel {
@@ -30,10 +32,12 @@ export function ChatPanel({ projectId, channels }: ChatPanelProps) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [loading, setLoading] = useState(false);
+  const [attachedFile, setAttachedFile] = useState<globalThis.File | null>(null);
+  const [uploading, setUploading] = useState(false);
   const { isActive: isVideoCallActive, startCall: startVideoCall, endCall: endVideoCall } = useVideoCall();
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Load messages when channel changes
   useEffect(() => {
     if (!selectedChannel || !session) return;
 
@@ -44,7 +48,6 @@ export function ChatPanel({ projectId, channels }: ChatPanelProps) {
       .finally(() => setLoading(false));
   }, [selectedChannel, session]);
 
-  // Connect to WebSocket
   useEffect(() => {
     if (!selectedChannel || !session) return;
 
@@ -66,27 +69,51 @@ export function ChatPanel({ projectId, channels }: ChatPanelProps) {
     };
   }, [selectedChannel, session]);
 
-  // Scroll to bottom when messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
   async function sendMessage() {
-    if (!newMessage.trim() || !selectedChannel || !session) return;
+    if (!newMessage.trim() && !attachedFile) return;
+    if (!selectedChannel || !session) return;
 
+    setUploading(true);
     try {
+      let attachmentUrl: string | undefined;
+      let attachmentName: string | undefined;
+
+      if (attachedFile) {
+        const { uploadUrl, fileUrl } = await apiFetch<{ uploadUrl: string; key: string; fileUrl: string }>("/files/presign", {
+          method: "POST",
+          body: JSON.stringify({ name: attachedFile.name, mimeType: attachedFile.type })
+        }, session.accessToken);
+
+        await fetch(uploadUrl, {
+          method: "PUT",
+          body: attachedFile,
+          headers: { "Content-Type": attachedFile.type }
+        });
+
+        attachmentUrl = fileUrl;
+        attachmentName = attachedFile.name;
+      }
+
       const message = await apiFetch("/messages", {
         method: "POST",
         body: JSON.stringify({
-          content: newMessage,
-          channelId: selectedChannel.id
+          content: newMessage || " ",
+          channelId: selectedChannel.id,
+          ...(attachmentUrl ? { attachmentUrl, attachmentName } : {})
         })
       }, session.accessToken);
 
       setMessages((prev) => [...prev, message as Message]);
       setNewMessage("");
+      setAttachedFile(null);
     } catch (err) {
       console.error("Failed to send message:", err);
+    } finally {
+      setUploading(false);
     }
   }
 
@@ -95,6 +122,12 @@ export function ChatPanel({ projectId, channels }: ChatPanelProps) {
       e.preventDefault();
       sendMessage();
     }
+  }
+
+  function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (file) setAttachedFile(file);
+    if (fileInputRef.current) fileInputRef.current.value = "";
   }
 
   return (
@@ -145,7 +178,18 @@ export function ChatPanel({ projectId, channels }: ChatPanelProps) {
                   {messages.map((msg) => (
                     <div key={msg.id} className="rounded-md bg-surface p-3">
                       <p className="text-xs font-semibold text-brand">{msg.sender?.name ?? "User"}</p>
-                      <p className="mt-1 text-sm">{msg.content}</p>
+                      {msg.content.trim() && <p className="mt-1 text-sm">{msg.content}</p>}
+                      {msg.attachmentUrl && (
+                        <a
+                          href={msg.attachmentUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="mt-2 flex items-center gap-2 rounded-md border border-line bg-white px-3 py-2 text-sm hover:bg-surface"
+                        >
+                          <Download className="h-4 w-4 text-muted" />
+                          <span className="truncate">{msg.attachmentName ?? "Attachment"}</span>
+                        </a>
+                      )}
                       <p className="mt-2 text-xs text-muted">
                         {new Date(msg.createdAt).toLocaleString()}
                       </p>
@@ -155,7 +199,30 @@ export function ChatPanel({ projectId, channels }: ChatPanelProps) {
                 </div>
               )}
             </div>
+            {attachedFile && (
+              <div className="flex items-center gap-2 border-t border-line px-3 py-2 text-sm">
+                <Paperclip className="h-4 w-4 text-muted" />
+                <span className="flex-1 truncate text-muted">{attachedFile.name}</span>
+                <button onClick={() => setAttachedFile(null)} className="text-muted hover:text-red-600">
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            )}
             <div className="flex gap-2 border-t border-line p-3">
+              <input
+                ref={fileInputRef}
+                type="file"
+                className="hidden"
+                id="chat-attachment"
+                onChange={handleFileSelect}
+              />
+              <label
+                htmlFor="chat-attachment"
+                className="grid h-10 w-10 cursor-pointer place-items-center rounded-md border border-line text-muted hover:bg-surface"
+                title="Attach file"
+              >
+                <Paperclip className="h-4 w-4" />
+              </label>
               <input
                 className="h-10 flex-1 rounded-md border border-line px-3"
                 placeholder={`Message #${selectedChannel.name}`}
@@ -165,8 +232,9 @@ export function ChatPanel({ projectId, channels }: ChatPanelProps) {
               />
               <button
                 onClick={sendMessage}
+                disabled={uploading}
                 aria-label="Send message"
-                className="grid h-10 w-10 place-items-center rounded-md bg-brand text-white"
+                className="grid h-10 w-10 place-items-center rounded-md bg-brand text-white disabled:opacity-50"
               >
                 <Send className="h-4 w-4" />
               </button>

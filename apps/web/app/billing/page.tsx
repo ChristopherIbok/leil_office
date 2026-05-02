@@ -36,7 +36,9 @@ export default function BillingPage() {
         <section className="rounded-md border border-line bg-white p-5">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 className="text-base font-semibold">Invoices</h2>
-            <button className="flex h-10 items-center gap-2 rounded-md bg-brand px-3 text-sm font-semibold text-white"><Plus className="h-4 w-4" />New invoice</button>
+            {session?.user?.role === "ADMIN" && (
+              <button className="flex h-10 items-center gap-2 rounded-md bg-brand px-3 text-sm font-semibold text-white"><Plus className="h-4 w-4" />New invoice</button>
+            )}
           </div>
           <div className="mt-4 overflow-x-auto">
             {loading ? (

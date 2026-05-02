@@ -49,4 +49,9 @@ export class AwsS3Service {
     const name = filename.replace(/[^a-zA-Z0-9._-]+/g, "_");
     return `projects/${projectId}/${randomUUID()}-${Date.now()}-${name}`;
   }
+
+  buildChatFileKey(filename: string) {
+    const name = filename.replace(/[^a-zA-Z0-9._-]+/g, "_");
+    return `chat/${randomUUID()}-${Date.now()}-${name}`;
+  }
 }

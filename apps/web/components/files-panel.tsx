@@ -31,17 +31,17 @@ export function FilesPanel({ projectId, files: initialFiles }: FilesPanelProps) 
     setUploading(true);
     try {
       // Get presigned URL
-      const { url, key } = await apiFetch<{ url: string; key: string }>("/files/presign", {
+      const { uploadUrl, key, fileUrl } = await apiFetch<{ uploadUrl: string; key: string; fileUrl: string }>("/files/presign", {
         method: "POST",
         body: JSON.stringify({
-          fileName: selectedFile.name,
+          name: selectedFile.name,
           mimeType: selectedFile.type,
           projectId
         })
       }, session.accessToken);
 
       // Upload to S3
-      await fetch(url, {
+      await fetch(uploadUrl, {
         method: "PUT",
         body: selectedFile,
         headers: { "Content-Type": selectedFile.type }
@@ -52,6 +52,7 @@ export function FilesPanel({ projectId, files: initialFiles }: FilesPanelProps) 
         method: "POST",
         body: JSON.stringify({
           name: selectedFile.name,
+          url: fileUrl,
           key,
           mimeType: selectedFile.type,
           size: selectedFile.size,
