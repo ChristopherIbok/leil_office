@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { Download, Plus, Upload, Check } from "lucide-react";
+import { Download, Plus, Upload, Check, X } from "lucide-react";
 import { Shell } from "../../components/shell";
 import { AuthGate } from "../../components/auth-gate";
 import { useAuthStore } from "../../store/auth-store";
@@ -13,7 +13,14 @@ interface Invoice {
   status: "DRAFT" | "SENT" | "PAID" | "OVERDUE" | "VOID";
   dueDate: string;
   paymentProofUrl?: string | null;
-  client?: { name: string } | null;
+  client?: { id: string; name: string } | null;
+}
+
+interface Client {
+  id: string;
+  name: string;
+  email: string;
+  role: string;
 }
 
 export default function BillingPage() {
@@ -21,8 +28,16 @@ export default function BillingPage() {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploadingId, setUploadingId] = useState<string | null>(null);
+  const [showCreate, setShowCreate] = useState(false);
+  const [clients, setClients] = useState<Client[]>([]);
+  const [form, setForm] = useState({ clientId: "", amount: "", dueDate: "" });
+  const [creating, setCreating] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const uploadingInvoiceId = useRef<string | null>(null);
+
+  const isClient = session?.user?.role === "CLIENT";
+  const isAdmin = session?.user?.role === "ADMIN";
 
   useEffect(() => {
     if (!session) return;
@@ -31,6 +46,32 @@ export default function BillingPage() {
       .catch((err) => console.error("Failed to load invoices:", err))
       .finally(() => setLoading(false));
   }, [session]);
+
+  useEffect(() => {
+    if (!session || !isAdmin) return;
+    apiFetch<Client[]>("/users", {}, session.accessToken)
+      .then((users) => setClients(users.filter((u) => u.role === "CLIENT")))
+      .catch(() => {});
+  }, [session, isAdmin]);
+
+  async function handleCreate(e: React.FormEvent) {
+    e.preventDefault();
+    if (!session) return;
+    setCreating(true);
+    setCreateError(null);
+    try {
+      const invoice = await apiFetch<Invoice>("/billing/invoices", {
+        method: "POST",
+        body: JSON.stringify({ clientId: form.clientId, amount: parseFloat(form.amount), dueDate: form.dueDate })
+      }, session.accessToken);
+      setInvoices((prev) => [invoice, ...prev]);
+      setShowCreate(false);
+      setForm({ clientId: "", amount: "", dueDate: "" });
+    } catch (err) {
+      setCreateError(err instanceof Error ? err.message : "Failed to create invoice.");
+    }
+    setCreating(false);
+  }
 
   async function handleProofUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -44,15 +85,12 @@ export default function BillingPage() {
         { method: "POST", body: JSON.stringify({ name: file.name, mimeType: file.type }) },
         session.accessToken
       );
-
       await fetch(uploadUrl, { method: "PUT", body: file, headers: { "Content-Type": file.type } });
-
       const updated = await apiFetch<Invoice>(
         `/billing/invoices/${invoiceId}/payment-proof`,
         { method: "PATCH", body: JSON.stringify({ paymentProofUrl: fileUrl, paymentProofKey: key }) },
         session.accessToken
       );
-
       setInvoices((prev) => prev.map((inv) => inv.id === invoiceId ? { ...inv, ...updated } : inv));
     } catch (err) {
       console.error("Upload failed:", err);
@@ -69,20 +107,83 @@ export default function BillingPage() {
     fileInputRef.current?.click();
   }
 
-  const isClient = session?.user?.role === "CLIENT";
-  const isAdmin = session?.user?.role === "ADMIN";
-
   return (
     <>
       <AuthGate />
       <Shell title="Billing">
         <input ref={fileInputRef} type="file" className="hidden" accept="image/*,.pdf" onChange={handleProofUpload} />
+
+        {/* Create invoice modal */}
+        {showCreate && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+            <div className="w-full max-w-md rounded-lg bg-white shadow-xl">
+              <div className="flex items-center justify-between border-b border-line p-4">
+                <h2 className="font-semibold">New Invoice</h2>
+                <button onClick={() => setShowCreate(false)} className="rounded-md p-1.5 text-muted hover:bg-surface">
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+              <form onSubmit={handleCreate} className="space-y-4 p-4">
+                <div>
+                  <label className="text-sm font-medium">Client</label>
+                  <select
+                    required
+                    value={form.clientId}
+                    onChange={(e) => setForm({ ...form, clientId: e.target.value })}
+                    className="mt-1 w-full rounded-md border border-line px-3 py-2 text-sm"
+                  >
+                    <option value="">Select a client...</option>
+                    {clients.map((c) => (
+                      <option key={c.id} value={c.id}>{c.name} ({c.email})</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Amount ($)</label>
+                  <input
+                    type="number"
+                    required
+                    min="0"
+                    step="0.01"
+                    value={form.amount}
+                    onChange={(e) => setForm({ ...form, amount: e.target.value })}
+                    className="mt-1 w-full rounded-md border border-line px-3 py-2 text-sm"
+                    placeholder="0.00"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium">Due Date</label>
+                  <input
+                    type="date"
+                    required
+                    value={form.dueDate}
+                    onChange={(e) => setForm({ ...form, dueDate: e.target.value })}
+                    className="mt-1 w-full rounded-md border border-line px-3 py-2 text-sm"
+                  />
+                </div>
+                {createError && <p className="text-sm text-red-600">{createError}</p>}
+                <div className="flex gap-3 pt-2">
+                  <button type="button" onClick={() => setShowCreate(false)} className="flex-1 rounded-md border border-line px-4 py-2 text-sm font-medium">
+                    Cancel
+                  </button>
+                  <button type="submit" disabled={creating} className="flex-1 rounded-md bg-brand px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">
+                    {creating ? "Creating..." : "Create Invoice"}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
         <section className="rounded-md border border-line bg-white p-5">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <h2 className="text-base font-semibold">Invoices</h2>
             {isAdmin && (
-              <button className="flex h-10 items-center gap-2 rounded-md bg-brand px-3 text-sm font-semibold text-white">
-                <Plus className="h-4 w-4" />New invoice
+              <button
+                onClick={() => setShowCreate(true)}
+                className="flex h-10 items-center gap-2 rounded-md bg-brand px-3 text-sm font-semibold text-white"
+              >
+                <Plus className="h-4 w-4" />New Invoice
               </button>
             )}
           </div>
@@ -135,7 +236,7 @@ export default function BillingPage() {
                               {uploadingId === invoice.id ? "Uploading..." : "Upload Proof"}
                             </button>
                           ) : null}
-                          <button aria-label="Download invoice" className="grid h-9 w-9 place-items-center rounded-md border border-line">
+                          <button aria-label="Download" className="grid h-9 w-9 place-items-center rounded-md border border-line">
                             <Download className="h-4 w-4" />
                           </button>
                         </div>
