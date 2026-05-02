@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post } from "@nestjs/common";
+import { Body, Controller, Get, Patch, Post } from "@nestjs/common";
 import { CurrentUser, AuthUser } from "../common/decorators/current-user.decorator";
 import { Public } from "../common/decorators/public.decorator";
 import { Roles } from "../common/decorators/roles.decorator";
@@ -30,5 +30,13 @@ export class AuthController {
   @Get("me")
   me(@CurrentUser() user: AuthUser) {
     return { user };
+  }
+
+  @Patch("password")
+  changePassword(
+    @CurrentUser() user: AuthUser,
+    @Body() dto: { currentPassword: string; newPassword: string }
+  ) {
+    return this.auth.changePassword(user.sub, dto.currentPassword, dto.newPassword);
   }
 }

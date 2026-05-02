@@ -34,9 +34,9 @@ export function Shell({ children, title }: { children: React.ReactNode; title: s
   const nav = [
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { href: "/projects", label: "Projects", icon: FolderOpen },
-    { href: "/time", label: "Time", icon: Clock },
-    { href: "/billing", label: "Billing", icon: CreditCard },
-    { href: "/team", label: "Team", icon: Users },
+    ...(session?.user?.role !== "CLIENT" ? [{ href: "/time", label: "Time", icon: Clock }] : []),
+    ...(session?.user?.role !== "TEAM_MEMBER" ? [{ href: "/billing", label: "Billing", icon: CreditCard }] : []),
+    ...(session?.user?.role !== "CLIENT" ? [{ href: "/team", label: "Team", icon: Users }] : []),
     { href: "/settings", label: "Settings", icon: Settings },
     { href: "/profile", label: "Profile", icon: User },
     ...(session?.user?.role === "ADMIN" ? [{ href: "/admin", label: "Admin", icon: ShieldCheck }] : [])

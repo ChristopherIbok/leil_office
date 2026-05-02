@@ -155,12 +155,14 @@ model TimeLog {
 }
 
 model Invoice {
-  id        String        @id @default(uuid())
-  clientId  String
-  amount    Decimal       @db.Decimal(12, 2)
-  status    InvoiceStatus @default(DRAFT)
-  dueDate   DateTime
-  client    User          @relation("ClientInvoices", fields: [clientId], references: [id])
-  createdAt DateTime      @default(now())
-  updatedAt DateTime      @updatedAt
+  id              String        @id @default(uuid())
+  clientId        String
+  amount          Decimal       @db.Decimal(12, 2)
+  status          InvoiceStatus @default(DRAFT)
+  dueDate         DateTime
+  paymentProofUrl String?
+  paymentProofKey String?
+  client          User          @relation("ClientInvoices", fields: [clientId], references: [id])
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
 }

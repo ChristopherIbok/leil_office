@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post } from "@nestjs/common";
+import { Body, Controller, Get, Param, Patch, Post } from "@nestjs/common";
 import { AuthUser, CurrentUser } from "../common/decorators/current-user.decorator";
 import { Roles } from "../common/decorators/roles.decorator";
 import { BillingService } from "./billing.service";
@@ -20,5 +20,14 @@ export class BillingController {
       return this.billing.findByClient(user.sub);
     }
     return this.billing.findAll();
+  }
+
+  @Patch("invoices/:id/payment-proof")
+  uploadPaymentProof(
+    @CurrentUser() user: AuthUser,
+    @Param("id") id: string,
+    @Body() dto: { paymentProofUrl: string; paymentProofKey: string }
+  ) {
+    return this.billing.uploadPaymentProof(id, user.sub, dto);
   }
 }

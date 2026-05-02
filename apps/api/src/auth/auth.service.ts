@@ -55,6 +55,16 @@ export class AuthService {
     });
   }
 
+  async changePassword(userId: string, currentPassword: string, newPassword: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new UnauthorizedException("User not found.");
+    const valid = await bcrypt.compare(currentPassword, user.password);
+    if (!valid) throw new UnauthorizedException("Current password is incorrect.");
+    const hashed = await bcrypt.hash(newPassword, 12);
+    await this.prisma.user.update({ where: { id: userId }, data: { password: hashed } });
+    return { message: "Password updated successfully." };
+  }
+
   private async withToken(user: { id: string; email: string; role: string; name: string; createdAt: Date }) {
     const accessToken = await this.jwt.signAsync(
       { sub: user.id, email: user.email, role: user.role },

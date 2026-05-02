@@ -26,4 +26,12 @@ export class BillingService {
       orderBy: { createdAt: "desc" }
     });
   }
+
+  async uploadPaymentProof(invoiceId: string, clientId: string, dto: { paymentProofUrl: string; paymentProofKey: string }) {
+    return this.prisma.invoice.update({
+      where: { id: invoiceId },
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      data: { paymentProofUrl: dto.paymentProofUrl, paymentProofKey: dto.paymentProofKey, status: "PAID" } as any
+    });
+  }
 }

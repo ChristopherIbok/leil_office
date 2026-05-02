@@ -24,6 +24,17 @@ export class TasksService {
     });
   }
 
+  findAllForTeamMember(userId: string, projectId?: string) {
+    return this.prisma.task.findMany({
+      where: {
+        assigneeId: userId,
+        ...(projectId ? { projectId } : {})
+      },
+      include: { assignee: { select: { id: true, name: true, email: true } }, comments: true },
+      orderBy: [{ status: "asc" }, { updatedAt: "desc" }]
+    });
+  }
+
   findAllForClient(clientId: string, projectId?: string) {
     return this.prisma.task.findMany({
       where: {

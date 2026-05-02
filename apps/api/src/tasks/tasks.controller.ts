@@ -19,6 +19,9 @@ export class TasksController {
     if (user.role === "CLIENT") {
       return this.tasks.findAllForClient(user.sub, projectId);
     }
+    if (user.role === "TEAM_MEMBER") {
+      return this.tasks.findAllForTeamMember(user.sub, projectId);
+    }
     return this.tasks.findAll(projectId);
   }
 
