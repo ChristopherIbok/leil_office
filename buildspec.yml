@@ -12,13 +12,14 @@ phases:
       - echo "Installing pnpm..."
       - corepack enable
       - corepack prepare pnpm@9.12.3 --activate
-      - pnpm config set store-dir .pnpm-store
-      - echo "Installing dependencies..."
-      - pnpm install --frozen-lockfile
+      - pnpm config set store-dir $(pwd)/.pnpm-store
+      - echo "Installing dependencies at root..."
+      - pnpm install --frozen-lockfile --prefer-offline
 
   pre_build:
     commands:
       - echo "Generating Prisma Client..."
+      # Ensure we are at the root so pnpm finds the workspace
       - pnpm prisma:generate
 
   build:
@@ -35,11 +36,11 @@ phases:
 artifacts:
   files:
     - 'apps/api/dist/**/*'
-    - 'apps/web/.next/**/*'
+    - 'apps/web/.next/**/*' 
     - 'apps/web/public/**/*'
     - 'package.json'
     - 'pnpm-workspace.yaml'
-    - 'node_modules/**/*'
+    - 'apps/web/package.json'
 
 cache:
   paths:
