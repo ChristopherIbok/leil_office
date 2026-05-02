@@ -12,7 +12,7 @@ frontend:
       commands:
         - NEXT_PUBLIC_API_URL=$API_URL pnpm --filter @leilportal/web build
   artifacts:
-    baseDirectory: apps/web/.next
+    baseDirectory: apps/web
     files:
       - '**/*'
   cache:
