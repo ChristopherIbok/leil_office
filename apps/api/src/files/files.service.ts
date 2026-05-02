@@ -35,7 +35,7 @@ export class FilesService {
       include: { members: true }
     });
     if (!project) throw new ForbiddenException("Access denied");
-    const isMember = project.members.some(m => m.userId === clientId);
+    const isMember = project.members.some((m: { userId: string }) => m.userId === clientId);
     const isClient = project.clientId === clientId;
     if (!isMember && !isClient) throw new ForbiddenException("Access denied");
     return this.findByProject(projectId);

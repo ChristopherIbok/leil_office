@@ -60,7 +60,7 @@ export class ChatService {
       }
     });
     if (!channel?.project) throw new ForbiddenException("Access denied");
-    const isMember = channel.project.members.some(m => m.userId === clientId);
+    const isMember = channel.project.members.some((m: { userId: string }) => m.userId === clientId);
     const isClient = channel.project.clientId === clientId;
     if (!isMember && !isClient) throw new ForbiddenException("Access denied");
     return this.messages(channelId);

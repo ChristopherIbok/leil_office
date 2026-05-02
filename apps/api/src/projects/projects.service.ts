@@ -83,7 +83,7 @@ export class ProjectsService {
       }
     });
     if (!project) throw new NotFoundException("Project not found");
-    const isMember = project.members.some(m => m.userId === clientId);
+    const isMember = project.members.some((m: { userId: string }) => m.userId === clientId);
     const isClient = project.clientId === clientId;
     if (!isMember && !isClient) throw new ForbiddenException("Access denied");
     return project;
