@@ -6,8 +6,7 @@ frontend:
         - corepack enable
         - corepack prepare pnpm@9.12.3 --activate
         - pnpm install --frozen-lockfile
-        # Provide a dummy URL to prevent Prisma from failing during generation
-        - export DATABASE_URL="postgresql://localhost:5432"
+        - export DATABASE_URL="postgresql://localhost:5432/dummy"
         - pnpm prisma:generate
     build:
       commands:
@@ -19,3 +18,4 @@ frontend:
   cache:
     paths:
       - apps/web/.next/cache/**/*
+      - /root/.local/share/pnpm/store/**/*

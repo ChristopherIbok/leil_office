@@ -3,8 +3,11 @@ version: 0.2
 env:
   variables:
     NODE_ENV: "production"
-    DATABASE_URL: "postgresql://johndoe:randompassword@localhost:5432/mydb?schema=public"
-    JWT_SECRET: "placeholder-for-build-validation"
+  # These must be set in CodeBuild environment or AWS Secrets Manager:
+  # DATABASE_URL, JWT_SECRET, ECR_REPOSITORY_URL, AWS_REGION
+  parameter-store:
+    DATABASE_URL: "/leilportal/DATABASE_URL"
+    JWT_SECRET: "/leilportal/JWT_SECRET"
 
 phases:
   install:
@@ -21,30 +24,31 @@ phases:
     commands:
       - echo "Generating Prisma Client..."
       - pnpm prisma:generate
+      - echo "Logging into Amazon ECR..."
+      - aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REPOSITORY_URL
 
   build:
     commands:
-      - echo "Building Backend..."
-      - pnpm --filter @leilportal/api build
+      - echo "Building API Docker image..."
+      - docker build -t $ECR_REPOSITORY_URL:latest -t $ECR_REPOSITORY_URL:$CODEBUILD_RESOLVED_SOURCE_VERSION -f apps/api/Dockerfile .
       - echo "Building Frontend..."
-      - pnpm --filter @leilportal/web build
+      - NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL pnpm --filter @leilportal/web build
 
   post_build:
     commands:
-      - echo "Logging into Amazon ECR..."
-      - aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REPOSITORY_URL
-      - docker build -t $ECR_REPOSITORY_URL:latest -f apps/api/Dockerfile .
+      - echo "Pushing API image to ECR..."
       - docker push $ECR_REPOSITORY_URL:latest
+      - docker push $ECR_REPOSITORY_URL:$CODEBUILD_RESOLVED_SOURCE_VERSION
 
 artifacts:
   files:
-    - 'apps/api/dist/**/*'
-    - 'apps/web/.next/**/*' 
+    - 'apps/web/.next/**/*'
     - 'apps/web/public/**/*'
+    - 'apps/web/package.json'
     - 'package.json'
     - 'pnpm-workspace.yaml'
-    - 'apps/web/package.json'
+    - 'pnpm-lock.yaml'
 
 cache:
   paths:
-    - '.pnpm-store/**/*'
+    - '/root/.local/share/pnpm/store/**/*'
