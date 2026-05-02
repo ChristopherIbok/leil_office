@@ -3,19 +3,17 @@ frontend:
   phases:
     preBuild:
       commands:
-        - corepack enable
-        - corepack prepare pnpm@9.12.3 --activate
-        - pnpm config set store-dir $(pwd)/.pnpm-store
-        - pnpm install --frozen-lockfile
-        - pnpm prisma:generate
+        - npm ci
+        # Provide a dummy URL to prevent Prisma from failing during generation
+        - export DATABASE_URL="postgresql://localhost:5432"
+        - npm run prisma:generate
     build:
       commands:
-        - NEXT_PUBLIC_API_URL=$API_URL pnpm --filter @leilportal/web build
+        - NEXT_PUBLIC_API_URL=$API_URL npm run build -w @leilportal/web
   artifacts:
     baseDirectory: apps/web/.next
     files:
       - '**/*'
   cache:
     paths:
-      - .pnpm-store/**/*
       - apps/web/.next/cache/**/*

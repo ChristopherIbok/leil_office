@@ -1,51 +1,42 @@
-# Stage 1: Base image for pnpm environment
-FROM node:20-slim AS base
-ENV PNPM_HOME="/pnpm"
-ENV PATH="$PNPM_HOME:$PATH"
-RUN corepack enable
-
+# Stage 1: Build stage
+FROM node:20-slim AS build
 WORKDIR /app
 
-# Stage 2: Build stage
-FROM base AS build
-
-# Copy the workspace configuration and lockfile first to leverage Docker cache
-COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
+# Copy workspace config and lockfile
+COPY package*.json ./
 
 # Copy all package.json files from the monorepo
-# This allows pnpm to calculate the dependency graph
 COPY apps/api/package.json ./apps/api/
 COPY apps/web/package.json ./apps/web/
-# Add other packages here if you have them, e.g., packages/types/package.json
 
-# Install all dependencies (including devDependencies for building)
-RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
+# Install all dependencies
+RUN npm ci
 
 # Copy the Prisma schema and generate the client
 COPY schema.prisma ./apps/api/prisma/schema.prisma
-RUN pnpm --filter @leilportal/api prisma:generate
+RUN npm run prisma:generate -w @leilportal/api
 
 # Copy the source code for the API and build it
 COPY apps/api ./apps/api
-RUN pnpm --filter @leilportal/api build
+RUN npm run build -w @leilportal/api
 
-# Use pnpm deploy to create an isolated production directory
-# This command handles workspace symlinks and prunes devDependencies
-RUN pnpm --filter @leilportal/api --prod deploy /app/deployed-api
+# Remove dev dependencies
+RUN npm prune --omit=dev
 
-# Stage 3: Production runner stage
+# Stage 2: Production runner stage
 FROM node:20-slim AS runner
 WORKDIR /app
 
-# Create a non-privileged user for security
+RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
 RUN groupadd -g 1001 nodejs && useradd -u 1001 -g nodejs nextjs
 
-# Copy the deployed application from the build stage
-COPY --from=build --chown=nextjs:nodejs /app/deployed-api ./
+# Copy built assets and node_modules
+COPY --from=build --chown=nextjs:nodejs /app/node_modules ./node_modules
+COPY --from=build --chown=nextjs:nodejs /app/apps/api/dist ./dist
+COPY --from=build --chown=nextjs:nodejs /app/apps/api/package.json ./package.json
 
 USER nextjs
 
-# Set runtime environment variables
 ENV NODE_ENV=production
 EXPOSE 4000
 
