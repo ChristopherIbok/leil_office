@@ -159,8 +159,9 @@ export default function TeamPage() {
               />
               <input
                 type="password"
-                placeholder="Temporary password"
+                placeholder="Temporary password (min 8 chars)"
                 required
+                minLength={8}
                 value={invitePassword}
                 onChange={(e) => setInvitePassword(e.target.value)}
                 className="rounded-md border border-line px-3 py-2 text-sm"
