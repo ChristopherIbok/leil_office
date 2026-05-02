@@ -1,4 +1,4 @@
-import { IsArray, IsDateString, IsOptional, IsString, IsIn } from "class-validator";
+import { IsArray, IsDateString, IsOptional, IsString, IsIn, ValidateIf } from "class-validator";
 
 export class CreateTaskDto {
   @IsString()
@@ -34,12 +34,13 @@ export class UpdateTaskDto {
   description?: string;
 
   @IsOptional()
-  @IsIn(["TODO", "IN_PROGRESS", "REVIEW", "DONE"])
+  @IsIn(["TODO", "IN_PROGRESS", "REVIEW" , "DONE"])
   status?: "TODO" | "IN_PROGRESS" | "REVIEW" | "DONE";
 
   @IsOptional()
+  @ValidateIf((o) => o.assigneeId !== null)
   @IsString()
-  assigneeId?: string;
+  assigneeId?: string | null;
 
   @IsOptional()
   @IsDateString()

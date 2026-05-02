@@ -52,9 +52,18 @@ export class TasksService {
   }
 
   update(id: string, dto: UpdateTaskDto) {
+    const { assigneeId, dueDate, ...rest } = dto;
     return this.prisma.task.update({
       where: { id },
-      data: { ...dto, dueDate: dto.dueDate ? new Date(dto.dueDate) : undefined },
+      data: {
+        ...rest,
+        dueDate: dueDate ? new Date(dueDate) : undefined,
+        assignee: assigneeId === null
+          ? { disconnect: true }
+          : assigneeId
+            ? { connect: { id: assigneeId } }
+            : undefined
+      },
       include: { assignee: { select: { id: true, name: true, email: true } } }
     });
   }

@@ -18,6 +18,7 @@ interface Task {
   title: string;
   description?: string | null;
   status: "TODO" | "IN_PROGRESS" | "REVIEW" | "DONE";
+  assigneeId?: string | null;
   assignee?: { id: string; name: string; email: string } | null;
   dueDate?: string | null;
   tags: string[];
