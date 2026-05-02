@@ -22,10 +22,11 @@ import { io } from 'socket.io-client';
 export default function KanbanBoard({ projectId }: { projectId: string }) {
   const [tasks, setTasks] = useState<any[]>([]);
   const token = useAuthStore((state) => state.token);
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
 
   useEffect(() => {
     const fetchTasks = async () => {
-      const res = await fetch(`http://localhost:4000/api/tasks?projectId=${projectId}`, {
+      const res = await fetch(`${apiUrl}/tasks?projectId=${projectId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
@@ -92,15 +93,6 @@ export default function KanbanBoard({ projectId }: { projectId: string }) {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ status: newStatus }),
-      });
-
-      await fetch('http://localhost:4000/api/tasks/reorder', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ taskId, status: newStatus }),
       });
     } catch (err) {
       console.error('Failed to update task status', err);

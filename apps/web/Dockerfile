@@ -1,5 +1,8 @@
 FROM node:20-alpine AS deps
 WORKDIR /app
+# Define build argument
+ARG NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 RUN corepack enable
 COPY package.json pnpm-workspace.yaml tsconfig.base.json ./
 COPY apps/web/package.json apps/web/package.json
@@ -14,6 +17,8 @@ RUN pnpm --filter @leilportal/web build
 FROM node:20-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production
+# Install curl for health checking
+RUN apk add --no-cache curl
 RUN corepack enable
 COPY --from=build /app/node_modules node_modules
 COPY --from=build /app/apps/web/.next apps/web/.next

@@ -31,7 +31,10 @@ phases:
 
   post_build:
     commands:
-      - echo "Build completed on `date`"
+      - echo "Logging into Amazon ECR..."
+      - aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $ECR_REPOSITORY_URL
+      - docker build -t $ECR_REPOSITORY_URL:latest -f apps/api/Dockerfile .
+      - docker push $ECR_REPOSITORY_URL:latest
 
 artifacts:
   files:
@@ -44,4 +47,4 @@ artifacts:
 
 cache:
   paths:
-    - '~/.npm/**/*'
+    - '.pnpm-store/**/*'

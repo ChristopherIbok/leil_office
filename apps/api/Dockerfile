@@ -21,6 +21,8 @@ RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
 
 # Copy the Prisma schema and generate the client
 COPY schema.prisma ./apps/api/prisma/schema.prisma
+# Provide a dummy URL for build-time type generation
+ENV DATABASE_URL="postgresql://user:pass@localhost:5432/db"
 RUN pnpm --filter @leilportal/api prisma:generate
 
 # Copy the source code for the API and build it
