@@ -11,6 +11,10 @@ export class CreateProjectDto {
   @IsOptional()
   @IsString()
   clientId?: string;
+
+  @IsOptional()
+  @IsIn(["PLANNING", "ACTIVE", "ON_HOLD", "COMPLETED", "ARCHIVED"])
+  status?: "PLANNING" | "ACTIVE" | "ON_HOLD" | "COMPLETED" | "ARCHIVED";
 }
 
 export class UpdateProjectDto {

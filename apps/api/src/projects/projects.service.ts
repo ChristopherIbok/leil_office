@@ -12,6 +12,7 @@ export class ProjectsService {
         name: dto.name,
         description: dto.description,
         clientId: dto.clientId,
+        status: dto.status,
         channels: { create: { name: "General" } }
       },
       include: { client: { select: { id: true, name: true, email: true } }, members: true }
