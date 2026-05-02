@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { FileUp, Download, Trash2 } from "lucide-react";
+import { FileUp, Download, Trash2, Eye, Copy, Check } from "lucide-react";
 import { useAuthStore } from "../store/auth-store";
 import { apiFetch } from "../lib/api";
 
@@ -22,7 +22,15 @@ export function FilesPanel({ projectId, files: initialFiles }: FilesPanelProps) 
   const session = useAuthStore((state) => state.session);
   const [files, setFiles] = useState<File[]>(initialFiles);
   const [uploading, setUploading] = useState(false);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  function copyLink(url: string, id: string) {
+    navigator.clipboard.writeText(url).then(() => {
+      setCopiedId(id);
+      setTimeout(() => setCopiedId(null), 2000);
+    });
+  }
 
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const selectedFile = e.target.files?.[0];
@@ -111,25 +119,44 @@ export function FilesPanel({ projectId, files: initialFiles }: FilesPanelProps) 
         ) : (
           files.map((file) => (
             <div key={file.id} className="flex items-center justify-between py-3">
-              <div className="flex items-center gap-3">
-                <span className="font-medium">{file.name}</span>
-                <span className="text-muted">v{file.version}</span>
+              <div className="min-w-0 flex-1">
+                <p className="truncate font-medium">{file.name}</p>
+                <p className="text-xs text-muted">v{file.version} &middot; {file.mimeType}</p>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="ml-3 flex items-center gap-1">
                 <a
                   href={file.url}
                   target="_blank"
                   rel="noopener noreferrer"
+                  title="Preview"
+                  className="rounded-md p-2 text-muted hover:bg-surface"
+                >
+                  <Eye className="h-4 w-4" />
+                </a>
+                <a
+                  href={file.url}
+                  download={file.name}
+                  title="Download"
                   className="rounded-md p-2 text-muted hover:bg-surface"
                 >
                   <Download className="h-4 w-4" />
                 </a>
                 <button
-                  onClick={() => handleDelete(file.id)}
-                  className="rounded-md p-2 text-muted hover:bg-surface hover:text-red-600"
+                  onClick={() => copyLink(file.url, file.id)}
+                  title="Copy link"
+                  className="rounded-md p-2 text-muted hover:bg-surface"
                 >
-                  <Trash2 className="h-4 w-4" />
+                  {copiedId === file.id ? <Check className="h-4 w-4 text-brand" /> : <Copy className="h-4 w-4" />}
                 </button>
+                {session?.user?.role !== "CLIENT" && (
+                  <button
+                    onClick={() => handleDelete(file.id)}
+                    title="Delete"
+                    className="rounded-md p-2 text-muted hover:bg-surface hover:text-red-600"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                )}
               </div>
             </div>
           ))

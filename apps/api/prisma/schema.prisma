@@ -113,7 +113,7 @@ model File {
   key        String
   name       String
   mimeType   String
-  size       Int
+  size       Int      @default(0)
   version    Int      @default(1)
   projectId  String
   uploadedBy String

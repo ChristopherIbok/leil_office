@@ -20,7 +20,7 @@ export class FilesService {
   }
 
   create(uploadedBy: string, dto: CreateFileRecordDto) {
-    return this.prisma.file.create({ data: { ...dto, uploadedBy } });
+    return this.prisma.file.create({ data: { ...dto, size: dto.size ?? 0, uploadedBy } });
   }
 
   findByProject(projectId: string) {

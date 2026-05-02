@@ -25,9 +25,10 @@ interface Task {
 
 interface KanbanBoardProps {
   initialTasks: Task[];
+  projectId: string;
 }
 
-export function KanbanBoard({ initialTasks }: KanbanBoardProps) {
+export function KanbanBoard({ initialTasks, projectId }: KanbanBoardProps) {
   const [tasks, setTasks] = useState<Task[]>(initialTasks);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const session = useAuthStore((state) => state.session);
@@ -86,6 +87,7 @@ export function KanbanBoard({ initialTasks }: KanbanBoardProps) {
       {selectedTask && (
         <TaskModal
           task={selectedTask}
+          projectId={projectId}
           onClose={() => setSelectedTask(null)}
           onUpdate={handleTaskUpdate}
         />

@@ -16,9 +16,10 @@ export class CreateFileRecordDto {
   @IsString()
   mimeType: string;
 
+  @IsOptional()
   @IsInt()
-  @Min(1)
-  size: number;
+  @Min(0)
+  size?: number;
 }
 
 export class PresignUploadDto {

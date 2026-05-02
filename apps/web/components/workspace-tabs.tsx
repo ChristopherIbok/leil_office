@@ -22,7 +22,7 @@ export function WorkspaceTabs({ project }: { project: ProjectDetail }) {
         ))}
       </div>
       {active === "Overview" && <OverviewPanel project={project} />}
-      {active === "Tasks" && <KanbanBoard initialTasks={project.tasks} />}
+      {active === "Tasks" && <KanbanBoard initialTasks={project.tasks} projectId={project.id} />}
       {active === "Files" && <FilesPanel projectId={project.id} files={project.files as any} />}
       {active === "Chat" && <ChatPanel projectId={project.id} channels={project.channels} />}
       {active === "Time" && <TimePanel projectId={project.id} tasks={project.tasks} />}
