@@ -1,14 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const API_ORIGIN = (() => {
-  const raw = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
+export const dynamic = "force-dynamic";
+
+function getApiOrigin() {
+  const raw = process.env.API_URL ?? process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
   return raw.replace(/\/api\/?$/, "").replace(/\/$/, "");
-})();
+}
 
 async function proxy(req: NextRequest, { params }: { params: { path: string[] } }) {
   const path = params.path.join("/");
   const search = req.nextUrl.search;
-  const url = `${API_ORIGIN}/api/${path}${search}`;
+  const url = `${getApiOrigin()}/api/${path}${search}`;
 
   const headers = new Headers();
   const auth = req.headers.get("authorization");
