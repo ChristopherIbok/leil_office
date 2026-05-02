@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
+import { ChevronRight, ArrowLeft } from "lucide-react";
 import { useAuthStore } from "../store/auth-store";
 import { fetchProject, ProjectDetail } from "../lib/api";
 import { AuthGate } from "./auth-gate";
@@ -28,6 +30,16 @@ export function ProjectWorkspace({ projectId }: { projectId: string }) {
     <>
       <AuthGate />
       <Shell title={project?.name ?? "Project Workspace"}>
+        {/* Breadcrumb */}
+        <nav className="mb-4 flex items-center gap-2 text-sm text-muted">
+          <Link href="/projects" className="flex items-center gap-1 hover:text-brand">
+            <ArrowLeft className="h-3.5 w-3.5" />
+            Projects
+          </Link>
+          <ChevronRight className="h-3.5 w-3.5" />
+          <span className="font-medium text-ink">{project?.name ?? "..."}</span>
+        </nav>
+
         {loading ? (
           <div className="rounded-md border border-line bg-white p-6 text-center text-sm text-muted">Loading project details...</div>
         ) : error ? (
