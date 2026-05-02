@@ -9,8 +9,11 @@ export class ProjectsController {
   constructor(private readonly projects: ProjectsService) {}
 
   @Post()
-  @Roles("ADMIN", "TEAM_MEMBER")
-  create(@Body() dto: CreateProjectDto) {
+  @Roles("ADMIN", "TEAM_MEMBER", "CLIENT")
+  create(@CurrentUser() user: AuthUser, @Body() dto: CreateProjectDto) {
+    if (user.role === "CLIENT") {
+      return this.projects.create({ ...dto, clientId: user.sub });
+    }
     return this.projects.create(dto);
   }
 

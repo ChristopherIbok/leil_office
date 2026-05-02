@@ -38,15 +38,13 @@ export default function ProjectsPage() {
       <Shell title="Projects">
         <div className="flex items-center justify-between">
           <h2 className="text-base font-semibold">All Projects</h2>
-          {session?.user?.role !== "CLIENT" && (
-            <Link
-              href="/projects/new"
-              className="flex h-10 items-center gap-2 rounded-md bg-brand px-3 text-sm font-semibold text-white"
-            >
-              <Plus className="h-4 w-4" />
-              New Project
-            </Link>
-          )}
+          <Link
+            href="/projects/new"
+            className="flex h-10 items-center gap-2 rounded-md bg-brand px-3 text-sm font-semibold text-white"
+          >
+            <Plus className="h-4 w-4" />
+            New Project
+          </Link>
         </div>
 
         <div className="mt-4 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
