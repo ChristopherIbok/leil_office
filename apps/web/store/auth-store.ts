@@ -1,40 +1,31 @@
 "use client";
 
 import { create } from "zustand";
+import { persist, createJSONStorage } from "zustand/middleware";
 import type { AuthSession } from "../lib/api";
-
-const STORAGE_KEY = "leilportal-session";
-
-function loadSession(): AuthSession | undefined {
-  if (typeof window === "undefined") return undefined;
-  const raw = window.localStorage.getItem(STORAGE_KEY);
-  if (!raw) return undefined;
-  try {
-    return JSON.parse(raw) as AuthSession;
-  } catch {
-    window.localStorage.removeItem(STORAGE_KEY);
-    return undefined;
-  }
-}
 
 type AuthState = {
   session?: AuthSession;
+  _hydrated: boolean;
   setSession: (session: AuthSession) => void;
   logout: () => void;
 };
 
-export const useAuthStore = create<AuthState>((set) => ({
-  session: loadSession(),
-  setSession: (session) => {
-    if (typeof window !== "undefined") {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(session));
+export const useAuthStore = create<AuthState>()(
+  persist(
+    (set) => ({
+      session: undefined,
+      _hydrated: false,
+      setSession: (session) => set({ session }),
+      logout: () => set({ session: undefined })
+    }),
+    {
+      name: "leilportal-session",
+      storage: createJSONStorage(() => localStorage),
+      partialize: (state) => ({ session: state.session }),
+      onRehydrateStorage: () => () => {
+        useAuthStore.setState({ _hydrated: true });
+      }
     }
-    set({ session });
-  },
-  logout: () => {
-    if (typeof window !== "undefined") {
-      window.localStorage.removeItem(STORAGE_KEY);
-    }
-    set({ session: undefined });
-  }
-}));
+  )
+);
