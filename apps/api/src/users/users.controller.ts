@@ -1,4 +1,5 @@
-import { Body, Controller, Delete, Get, Param, Patch, Post } from "@nestjs/common";
+import { Body, Controller, Delete, ForbiddenException, Get, Param, Patch, Post } from "@nestjs/common";
+import { AuthUser, CurrentUser } from "../common/decorators/current-user.decorator";
 import { Roles } from "../common/decorators/roles.decorator";
 import { UsersService } from "./users.service";
 
@@ -25,9 +26,10 @@ export class UsersController {
   }
 
   @Patch(":id")
-  @Roles("ADMIN")
-  update(@Param("id") id: string, @Body() dto: { name?: string; role?: string }) {
-    return this.users.update(id, dto);
+  update(@CurrentUser() user: AuthUser, @Param("id") id: string, @Body() dto: { name?: string; role?: string }) {
+    if (user.role !== "ADMIN" && user.sub !== id) throw new ForbiddenException("You can only update your own profile.");
+    const safeDto = user.role === "ADMIN" ? dto : { name: dto.name };
+    return this.users.update(id, safeDto);
   }
 
   @Delete(":id")
