@@ -101,7 +101,7 @@ function KanbanColumn({ id, label, tasks, onTaskClick }: { id: string; label: st
   const { setNodeRef, isOver } = useDroppable({ id });
 
   return (
-    <div ref={setNodeRef} className={`min-h-[26rem] rounded-md border p-3 ${isOver ? "border-brand bg-emerald-50" : "border-line bg-surface"}`}>
+    <div ref={setNodeRef} className={`min-h-[26rem] rounded-md border p-3 ${isOver ? "border-brand bg-brand/5" : "border-line bg-surface"}`}>
       <h3 className="mb-3 text-sm font-semibold">{label}</h3>
       <div className="space-y-3">
         {tasks.map((task) => (

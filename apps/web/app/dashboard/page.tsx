@@ -98,11 +98,7 @@ export default function DashboardPage() {
                         <p className="font-medium">{project.name}</p>
                         <p className="text-xs text-muted">{project._count?.tasks ?? 0} tasks</p>
                       </div>
-                      <span className={`rounded-md px-2 py-1 text-xs font-semibold ${
-                        project.status === "ACTIVE" ? "bg-green-100 text-green-700" :
-                        project.status === "PLANNING" ? "bg-blue-100 text-blue-700" :
-                        "bg-gray-100 text-gray-700"
-                      }`}>
+                      <span className="rounded-md bg-brand/10 px-2 py-1 text-xs font-semibold text-brand">
                         {project.status}
                       </span>
                     </Link>
@@ -128,12 +124,7 @@ export default function DashboardPage() {
                         <p className="font-medium text-sm">#{invoice.id.slice(0, 8)}</p>
                         <p className="text-xs text-muted">${invoice.amount}</p>
                       </div>
-                      <span className={`rounded-md px-2 py-1 text-xs font-semibold ${
-                        invoice.status === "PAID" ? "bg-green-100 text-green-700" :
-                        invoice.status === "OVERDUE" ? "bg-red-100 text-red-700" :
-                        invoice.status === "SENT" ? "bg-blue-100 text-blue-700" :
-                        "bg-gray-100 text-gray-700"
-                      }`}>
+                      <span className="rounded-md bg-brand/10 px-2 py-1 text-xs font-semibold text-brand">
                         {invoice.status}
                       </span>
                     </div>
