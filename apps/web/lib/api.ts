@@ -1,8 +1,12 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? (
-  process.env.NODE_ENV === "production"
-    ? (() => { throw new Error("NEXT_PUBLIC_API_URL is required in production"); })()
-    : "http://localhost:4000"
-);
+// In the browser, use a relative path so requests go through the Next.js
+// rewrite proxy (avoids mixed-content and CORS issues entirely).
+// On the server (SSR/build), use the full origin from the env var.
+const API_URL = typeof window !== "undefined"
+  ? ""
+  : (() => {
+      const raw = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000";
+      return raw.replace(/\/api\/?$/, "").replace(/\/$/, "");
+    })();
 const DEMO_AUTH_ENABLED = process.env.NEXT_PUBLIC_DEMO_AUTH !== "false";
 
 const demoUsers = [
