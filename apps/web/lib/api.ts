@@ -108,12 +108,12 @@ export function login(email: string, password: string) {
   });
 }
 
-export function register(name: string, email: string, password: string, role = "TEAM_MEMBER") {
+export function register(name: string, email: string, password: string) {
   return apiFetch<AuthSession>(
     "/auth/register",
     {
       method: "POST",
-      body: JSON.stringify({ name, email, password, role })
+      body: JSON.stringify({ name, email, password })
     }
   ).catch((error) => {
     if (!DEMO_AUTH_ENABLED) throw error;
@@ -123,7 +123,7 @@ export function register(name: string, email: string, password: string, role = "
         id: `demo-${email}`,
         name,
         email,
-        role: role as AuthSession["user"]["role"]
+        role: "TEAM_MEMBER" as AuthSession["user"]["role"]
       }
     };
   });
