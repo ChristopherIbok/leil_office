@@ -21,7 +21,10 @@ export class FilesController {
   }
 
   @Get("project/:projectId")
-  findByProject(@Param("projectId") projectId: string) {
+  findByProject(@CurrentUser() user: AuthUser, @Param("projectId") projectId: string) {
+    if (user.role === "CLIENT") {
+      return this.files.findByProjectForClient(projectId, user.sub);
+    }
     return this.files.findByProject(projectId);
   }
 }

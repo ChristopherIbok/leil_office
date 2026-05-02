@@ -1,5 +1,5 @@
 import { Body, Controller, Get, Param, Post, Query } from "@nestjs/common";
-import { CurrentUser, AuthUser } from "../common/decorators/current-user.decorator";
+import { AuthUser, CurrentUser } from "../common/decorators/current-user.decorator";
 import { Roles } from "../common/decorators/roles.decorator";
 import { ChatService } from "./chat.service";
 import { CreateChannelDto, CreateMessageDto } from "./dto";
@@ -15,17 +15,24 @@ export class ChatController {
   }
 
   @Get("channels")
-  channels(@Query("projectId") projectId?: string) {
+  channels(@CurrentUser() user: AuthUser, @Query("projectId") projectId?: string) {
+    if (user.role === "CLIENT") {
+      return this.chat.channelsForClient(user.sub, projectId);
+    }
     return this.chat.channels(projectId);
   }
 
   @Post("messages")
+  @Roles("ADMIN", "TEAM_MEMBER")
   createMessage(@CurrentUser() user: AuthUser, @Body() dto: CreateMessageDto) {
     return this.chat.createMessage(user.sub, dto);
   }
 
   @Get("channels/:channelId/messages")
-  messages(@Param("channelId") channelId: string) {
+  messages(@CurrentUser() user: AuthUser, @Param("channelId") channelId: string) {
+    if (user.role === "CLIENT") {
+      return this.chat.messagesForClient(channelId, user.sub);
+    }
     return this.chat.messages(channelId);
   }
 }

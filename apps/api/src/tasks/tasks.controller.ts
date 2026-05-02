@@ -1,4 +1,5 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from "@nestjs/common";
+import { AuthUser, CurrentUser } from "../common/decorators/current-user.decorator";
 import { Roles } from "../common/decorators/roles.decorator";
 import { CreateTaskDto, UpdateTaskDto } from "./dto";
 import { TasksService } from "./tasks.service";
@@ -14,7 +15,10 @@ export class TasksController {
   }
 
   @Get()
-  findAll(@Query("projectId") projectId?: string) {
+  findAll(@CurrentUser() user: AuthUser, @Query("projectId") projectId?: string) {
+    if (user.role === "CLIENT") {
+      return this.tasks.findAllForClient(user.sub, projectId);
+    }
     return this.tasks.findAll(projectId);
   }
 

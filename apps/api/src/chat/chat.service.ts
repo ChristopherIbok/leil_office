@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, ForbiddenException } from "@nestjs/common";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { CreateChannelDto, CreateMessageDto } from "./dto";
 
@@ -18,6 +18,22 @@ export class ChatService {
     });
   }
 
+  channelsForClient(clientId: string, projectId?: string) {
+    return this.prisma.channel.findMany({
+      where: {
+        project: {
+          OR: [
+            { clientId },
+            { members: { some: { userId: clientId } } }
+          ]
+        },
+        ...(projectId ? { projectId } : {})
+      },
+      include: { _count: { select: { messages: true } } },
+      orderBy: { createdAt: "asc" }
+    });
+  }
+
   createMessage(senderId: string, dto: CreateMessageDto) {
     return this.prisma.message.create({
       data: { ...dto, senderId },
@@ -32,5 +48,21 @@ export class ChatService {
       orderBy: { createdAt: "asc" },
       take: 100
     });
+  }
+
+  async messagesForClient(channelId: string, clientId: string) {
+    const channel = await this.prisma.channel.findUnique({
+      where: { id: channelId },
+      include: {
+        project: {
+          include: { members: true }
+        }
+      }
+    });
+    if (!channel?.project) throw new ForbiddenException("Access denied");
+    const isMember = channel.project.members.some(m => m.userId === clientId);
+    const isClient = channel.project.clientId === clientId;
+    if (!isMember && !isClient) throw new ForbiddenException("Access denied");
+    return this.messages(channelId);
   }
 }

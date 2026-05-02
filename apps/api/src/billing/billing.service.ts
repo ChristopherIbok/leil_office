@@ -18,4 +18,12 @@ export class BillingService {
       orderBy: { createdAt: "desc" }
     });
   }
+
+  findByClient(clientId: string) {
+    return this.prisma.invoice.findMany({
+      where: { clientId },
+      include: { client: { select: { id: true, name: true, email: true } } },
+      orderBy: { createdAt: "desc" }
+    });
+  }
 }

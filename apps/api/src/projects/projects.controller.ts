@@ -1,4 +1,5 @@
 import { Body, Controller, Delete, Get, Param, Patch, Post, Query } from "@nestjs/common";
+import { AuthUser, CurrentUser } from "../common/decorators/current-user.decorator";
 import { Roles } from "../common/decorators/roles.decorator";
 import { CreateProjectDto, UpdateProjectDto } from "./dto";
 import { ProjectsService } from "./projects.service";
@@ -14,12 +15,18 @@ export class ProjectsController {
   }
 
   @Get()
-  findAll(@Query("search") search?: string) {
+  findAll(@CurrentUser() user: AuthUser, @Query("search") search?: string) {
+    if (user.role === "CLIENT") {
+      return this.projects.findByClient(user.sub, search);
+    }
     return this.projects.findAll(search);
   }
 
   @Get(":id")
-  findOne(@Param("id") id: string) {
+  findOne(@CurrentUser() user: AuthUser, @Param("id") id: string) {
+    if (user.role === "CLIENT") {
+      return this.projects.findOneForClient(id, user.sub);
+    }
     return this.projects.findOne(id);
   }
 

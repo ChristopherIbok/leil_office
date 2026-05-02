@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, ForbiddenException } from "@nestjs/common";
 import { PrismaService } from "../common/prisma/prisma.service";
 import { AwsS3Service } from "../common/aws/aws-s3.service";
 import { CreateFileRecordDto, PresignUploadDto } from "./dto";
@@ -27,5 +27,17 @@ export class FilesService {
       include: { uploader: { select: { id: true, name: true, email: true } } },
       orderBy: { createdAt: "desc" }
     });
+  }
+
+  async findByProjectForClient(projectId: string, clientId: string) {
+    const project = await this.prisma.project.findUnique({
+      where: { id: projectId },
+      include: { members: true }
+    });
+    if (!project) throw new ForbiddenException("Access denied");
+    const isMember = project.members.some(m => m.userId === clientId);
+    const isClient = project.clientId === clientId;
+    if (!isMember && !isClient) throw new ForbiddenException("Access denied");
+    return this.findByProject(projectId);
   }
 }

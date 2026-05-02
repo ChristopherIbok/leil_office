@@ -1,4 +1,5 @@
-import { Controller, Post, Req, Headers, RawBodyRequest, RawBody } from "@nestjs/common";
+import { Controller, Post, Req, Headers, RawBodyRequest } from "@nestjs/common";
+import { Public } from "../common/decorators/public.decorator";
 import { Request } from "express";
 import { StripeService } from "../billing/stripe.service";
 import { PrismaService } from "../common/prisma/prisma.service";
@@ -10,6 +11,7 @@ export class WebhooksController {
     private readonly prisma: PrismaService
   ) {}
 
+  @Public()
   @Post("stripe")
   async handleStripeWebhook(
     @Req() req: RawBodyRequest<Request>,
