@@ -30,11 +30,10 @@ export class AwsS3Service {
     const command = new PutObjectCommand({
       Bucket: this.bucket,
       Key: key,
-      ContentType: contentType,
-      ACL: "private"
+      ContentType: contentType
     });
 
-    return getSignedUrl(this.client, command, { expiresIn: 900 });
+    return getSignedUrl(this.client, command, { expiresIn: 900, unhoistableHeaders: new Set(["x-amz-checksum-crc32"]) });
   }
 
   buildFileUrl(key: string) {
