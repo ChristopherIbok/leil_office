@@ -39,7 +39,7 @@ export function TaskModal({ task, projectId, onClose, onUpdate }: TaskModalProps
   useEffect(() => {
     if (!session) return;
     apiFetch<TeamMember[]>("/users", {}, session.accessToken)
-      .then(setMembers)
+      .then((users) => setMembers(users.filter((u) => u.role !== "CLIENT")))
       .catch(() => {});
   }, [session]);
 
