@@ -4,26 +4,30 @@ env:
   variables:
     NODE_ENV: "production"
     DATABASE_URL: "postgresql://johndoe:randompassword@localhost:5432/mydb?schema=public"
+    JWT_SECRET: "placeholder-for-build-validation"
 
 phases:
   install:
     runtime-versions:
       nodejs: 20
     commands:
+      - echo "Enabling pnpm via corepack..."
+      - corepack enable
+      - corepack prepare pnpm@9.12.3 --activate
       - echo "Installing dependencies..."
-      - npm ci
+      - pnpm install --frozen-lockfile
 
   pre_build:
     commands:
       - echo "Generating Prisma Client..."
-      - npm run prisma:generate
+      - pnpm prisma:generate
 
   build:
     commands:
       - echo "Building Backend..."
-      - npm run build -w @leilportal/api
+      - pnpm --filter @leilportal/api build
       - echo "Building Frontend..."
-      - npm run build -w @leilportal/web
+      - pnpm --filter @leilportal/web build
 
   post_build:
     commands:
@@ -35,7 +39,7 @@ artifacts:
     - 'apps/web/.next/**/*' 
     - 'apps/web/public/**/*'
     - 'package.json'
-    - 'package-lock.json'
+    - 'pnpm-workspace.yaml'
     - 'apps/web/package.json'
 
 cache:

@@ -3,19 +3,16 @@
   "version": "0.1.0",
   "private": true,
   "description": "LEILPORTAL monorepo for a secure digital office SaaS.",
-  "workspaces": [
-    "apps/*",
-    "packages/*"
-  ],
   "scripts": {
-    "dev": "npm run dev --workspaces --if-present",
-    "dev:api": "npm run dev -w @leilportal/api",
-    "dev:web": "npm run dev -w @leilportal/web",
-    "build": "npm run build --workspaces --if-present",
-    "lint": "npm run lint --workspaces --if-present",
-    "prisma:generate": "npx prisma generate --schema=./schema.prisma",
-    "prisma:migrate": "npx prisma migrate dev --schema=./schema.prisma"
+    "dev": "pnpm --parallel dev",
+    "dev:api": "pnpm --filter @leilportal/api dev",
+    "dev:web": "pnpm --filter @leilportal/web dev",
+    "build": "pnpm --recursive build",
+    "lint": "pnpm --recursive lint",
+    "prisma:generate": "pnpm --filter @leilportal/api prisma:generate",
+    "prisma:migrate": "pnpm --filter @leilportal/api prisma:migrate"
   },
+  "packageManager": "pnpm@9.12.3",
   "engines": {
     "node": ">=20.11.0"
   },

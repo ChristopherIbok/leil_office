@@ -1,39 +1,44 @@
-# Stage 1: Build stage
-FROM node:20-slim AS build
+# Stage 1: Base image for pnpm environment
+FROM node:20-slim AS base
+ENV PNPM_HOME="/pnpm"
+ENV PATH="$PNPM_HOME:$PATH"
+RUN corepack enable
+
 WORKDIR /app
 
-# Copy workspace config and lockfile
-COPY package*.json ./
+# Stage 2: Build stage
+FROM base AS build
+
+# Copy the workspace configuration and lockfile first
+COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
 
 # Copy all package.json files from the monorepo
 COPY apps/api/package.json ./apps/api/
 COPY apps/web/package.json ./apps/web/
 
 # Install all dependencies
-RUN npm ci
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
 
 # Copy the Prisma schema and generate the client
 COPY schema.prisma ./apps/api/prisma/schema.prisma
-RUN npm run prisma:generate -w @leilportal/api
+RUN pnpm --filter @leilportal/api prisma:generate
 
 # Copy the source code for the API and build it
 COPY apps/api ./apps/api
-RUN npm run build -w @leilportal/api
+RUN pnpm --filter @leilportal/api build
 
-# Remove dev dependencies
-RUN npm prune --omit=dev
+# Use pnpm deploy to create an isolated production directory
+RUN pnpm --filter @leilportal/api --prod deploy /app/deployed-api
 
-# Stage 2: Production runner stage
+# Stage 3: Production runner stage
 FROM node:20-slim AS runner
 WORKDIR /app
 
 RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
 RUN groupadd -g 1001 nodejs && useradd -u 1001 -g nodejs nextjs
 
-# Copy built assets and node_modules
-COPY --from=build --chown=nextjs:nodejs /app/node_modules ./node_modules
-COPY --from=build --chown=nextjs:nodejs /app/apps/api/dist ./dist
-COPY --from=build --chown=nextjs:nodejs /app/apps/api/package.json ./package.json
+# Copy the deployed application from the build stage
+COPY --from=build --chown=nextjs:nodejs /app/deployed-api ./
 
 USER nextjs
 

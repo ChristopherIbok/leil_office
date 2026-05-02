@@ -3,13 +3,15 @@ frontend:
   phases:
     preBuild:
       commands:
-        - npm ci
+        - corepack enable
+        - corepack prepare pnpm@9.12.3 --activate
+        - pnpm install --frozen-lockfile
         # Provide a dummy URL to prevent Prisma from failing during generation
         - export DATABASE_URL="postgresql://localhost:5432"
-        - npm run prisma:generate
+        - pnpm prisma:generate
     build:
       commands:
-        - NEXT_PUBLIC_API_URL=$API_URL npm run build -w @leilportal/web
+        - NEXT_PUBLIC_API_URL=$API_URL pnpm --filter @leilportal/web build
   artifacts:
     baseDirectory: apps/web/.next
     files:
