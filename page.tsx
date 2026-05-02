@@ -11,6 +11,7 @@ export default function ProjectWorkspace() {
   const [activeTab, setActiveTab] = useState<'tasks' | 'chat'>('tasks');
   const [project, setProject] = useState<any>(null);
   const token = useAuthStore((state) => state.token);
+  const user = useAuthStore((state) => state.user);
 
   useEffect(() => {
     const fetchProject = async () => {
@@ -50,13 +51,19 @@ export default function ProjectWorkspace() {
         {/* Tab Switcher */}
         <div className="flex bg-gray-100 p-1 rounded-xl">
           <button
-            onClick={() => setActiveTab('tasks')}
-            className={`flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-semibold transition-all ${
-              activeTab === 'tasks' ? 'bg-white shadow-sm text-indigo-600' : 'text-gray-500 hover:text-gray-700'
-            }`}
+            onClick={() => setActiveTab('tasks')} // Default to tasks if client role
+            className={`flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-semibold transition-all ${activeTab === 'tasks' ? 'bg-white shadow-sm text-indigo-600' : 'text-gray-500 hover:text-gray-700'}`}
           >
             <LayoutGrid size={16} /> Tasks
           </button>
+          {user?.role !== 'CLIENT' && ( // Only show Tasks tab for Admin/Team Member
+            <button
+              onClick={() => setActiveTab('tasks')}
+              className={`flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-semibold transition-all ${activeTab === 'tasks' ? 'bg-white shadow-sm text-indigo-600' : 'text-gray-500 hover:text-gray-700'}`}
+            >
+              <LayoutGrid size={16} /> Tasks
+            </button>
+          )}
           <button
             onClick={() => setActiveTab('chat')}
             className={`flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-semibold transition-all ${
@@ -70,7 +77,7 @@ export default function ProjectWorkspace() {
 
       {/* Workspace Content */}
       <main className="flex-1 overflow-hidden">
-        {activeTab === 'tasks' ? (
+        {activeTab === 'tasks' && user?.role !== 'CLIENT' ? ( // Only render Kanban for Admin/Team Member
           <KanbanBoard projectId={projectId as string} />
         ) : (
           <ChatRoom projectId={projectId as string} />

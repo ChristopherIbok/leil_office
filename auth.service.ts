@@ -10,7 +10,7 @@ export class AuthService {
     private jwtService: JwtService,
   ) {}
 
-  async validateCognitoUser(payload: any) {
+  async validateCognitoUser(payload: { email: string; name?: string; 'custom:full_name'?: string; 'custom:role'?: string }) {
     // Check if user exists in local DB by email
     let user = await this.prisma.user.findUnique({
       where: { email: payload.email },
@@ -22,8 +22,8 @@ export class AuthService {
         data: {
           email: payload.email,
           name: payload.name || payload['custom:full_name'] || 'User',
-          password: '', // Password is managed by Cognito, not stored locally
-          role: 'CLIENT', // Default role for new users
+          password: '', // Password is managed by Cognito, not stored locally,
+          role: (payload['custom:role'] as Role) || 'CLIENT', // Use Cognito custom role or default to CLIENT
         },
       });
     }
@@ -31,7 +31,7 @@ export class AuthService {
     return user;
   }
 
-  async register(email: string, pass: string, name: string) {
+  async register(email: string, pass: string, name: string, role: Role = 'CLIENT') {
     const hashedPassword = await bcrypt.hash(pass, 10);
     
     const user = await this.prisma.user.create({
@@ -39,7 +39,7 @@ export class AuthService {
         email,
         password: hashedPassword,
         name,
-        role: 'CLIENT', // Default role
+        role, // Use provided role or default
       },
     });
 

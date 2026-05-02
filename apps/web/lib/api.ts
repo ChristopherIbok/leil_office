@@ -9,7 +9,7 @@ const API_URL = typeof window !== "undefined"
     })();
 const DEMO_AUTH_ENABLED = process.env.NEXT_PUBLIC_DEMO_AUTH !== "false";
 
-const demoUsers = [
+export const demoUsers = [
   {
     id: "demo-admin",
     name: "Admin",

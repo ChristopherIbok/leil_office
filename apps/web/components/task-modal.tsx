@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { X, Calendar, Tag, User } from "lucide-react";
 import { useAuthStore } from "../store/auth-store";
-import { apiFetch } from "../lib/api";
+import { apiFetch, demoUsers } from "../lib/api";
 
 interface Task {
   id: string;
@@ -30,7 +30,7 @@ interface TaskModalProps {
   onUpdate: (task: Task) => void;
 }
 
-export function TaskModal({ task, projectId, onClose, onUpdate }: TaskModalProps) {
+export function TaskModal({ task, onClose, onUpdate }: TaskModalProps) {
   const session = useAuthStore((state) => state.session);
   const [editedTask, setEditedTask] = useState<Task>(task);
   const [saving, setSaving] = useState(false);
@@ -40,7 +40,9 @@ export function TaskModal({ task, projectId, onClose, onUpdate }: TaskModalProps
     if (!session) return;
     apiFetch<TeamMember[]>("/users", {}, session.accessToken)
       .then((users) => setMembers(users.filter((u) => u.role !== "CLIENT")))
-      .catch(() => {});
+      .catch(() => {
+        setMembers(demoUsers.filter((u) => u.role !== "CLIENT"));
+      });
   }, [session]);
 
   async function handleSave() {

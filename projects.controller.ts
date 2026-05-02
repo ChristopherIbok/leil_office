@@ -4,6 +4,8 @@ import { CreateProjectDto } from './create-project.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { CurrentUser } from './current-user.decorator';
 import { User } from '@prisma/client';
+import { RolesGuard, Roles } from './roles.guard';
+import { Role } from '@prisma/client';
 import { GetProjectsDto } from './get-projects.dto';
 
 @Controller('projects')
@@ -11,6 +13,8 @@ import { GetProjectsDto } from './get-projects.dto';
 export class ProjectsController {
   constructor(private readonly projectsService: ProjectsService) {}
 
+  @UseGuards(RolesGuard)
+  @Roles(Role.ADMIN, Role.TEAM_MEMBER)
   @Post()
   async create(
     @Body() createProjectDto: CreateProjectDto,

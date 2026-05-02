@@ -4,7 +4,7 @@
   "private": true,
   "description": "LEILPORTAL monorepo for a secure digital office SaaS.",
   "scripts": {
-    "dev": "pnpm --parallel dev",
+    "dev": "pnpm prisma:generate && pnpm --parallel dev",
     "dev:api": "pnpm --filter @leilportal/api dev",
     "dev:web": "pnpm --filter @leilportal/web dev",
     "build": "pnpm --recursive build",

@@ -23,6 +23,7 @@ export default function KanbanBoard({ projectId }: { projectId: string }) {
   const [tasks, setTasks] = useState<any[]>([]);
   const token = useAuthStore((state) => state.token);
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api';
+  const user = useAuthStore((state) => state.user);
 
   useEffect(() => {
     const fetchTasks = async () => {
@@ -100,7 +101,7 @@ export default function KanbanBoard({ projectId }: { projectId: string }) {
     }
   };
 
-  return (
+  return user?.role !== 'CLIENT' ? ( // Disable DndContext entirely for CLIENT
     <DndContext
       sensors={sensors}
       collisionDetection={closestCorners}
@@ -141,6 +142,28 @@ export default function KanbanBoard({ projectId }: { projectId: string }) {
         ))}
       </div>
     </DndContext>
+  ) : (
+    <div className="flex gap-6 p-8 h-full overflow-x-auto items-start bg-gray-50">
+      {columns.map((col) => (
+        <div key={col.key} className="flex-shrink-0 w-80 flex flex-col max-h-full">
+          <div className="flex items-center justify-between mb-4 px-2">
+            <h3 className="font-bold text-gray-700 flex items-center gap-2">
+              {col.label}{' '}
+              <span className="bg-gray-200 text-gray-600 text-xs px-2 py-0.5 rounded-full">
+                  {tasks.filter((t) => t.status === col.key).length}
+                </span>
+            </h3>
+          </div>
+          <div className="flex-1 space-y-4 overflow-y-auto pb-4 custom-scrollbar">
+            {tasks
+              .filter((t) => t.status === col.key)
+              .map((task) => (
+                <StaticTask key={task.id} task={task} />
+              ))}
+          </div>
+        </div>
+      ))}
+    </div>
   );
 }
 
@@ -155,14 +178,11 @@ function SortableTask({ task }: { task: any }) {
   };
 
   return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      className="bg-white p-5 rounded-xl shadow-sm border border-gray-100 hover:border-indigo-200 transition-all group"
-    >
+    <div ref={setNodeRef} style={style} className="bg-white p-5 rounded-xl shadow-sm border border-gray-100 hover:border-indigo-200 transition-all group">
       <div className="flex justify-between items-start mb-2">
         <div className="flex items-start gap-2">
           <button
+            type="button"
             {...attributes}
             {...listeners}
             className="mt-1 text-gray-300 cursor-grab active:cursor-grabbing hover:text-gray-500"
@@ -173,9 +193,33 @@ function SortableTask({ task }: { task: any }) {
             {task.title}
           </h4>
         </div>
-        <button className="opacity-0 group-hover:opacity-100 transition-opacity text-gray-400">
+        <button type="button" className="opacity-0 group-hover:opacity-100 transition-opacity text-gray-400">
           <MoreHorizontal size={16} />
         </button>
+      </div>
+      {task.assignee && (
+        <div className="mt-3 flex items-center gap-2">
+          <div className="w-6 h-6 rounded-full bg-indigo-100 flex items-center justify-center text-[10px] font-bold text-indigo-700">
+            {task.assignee.name.charAt(0)}
+          </div>
+          <span className="text-xs text-gray-500">{task.assignee.name}</span>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// New component for non-draggable tasks (for CLIENT role)
+function StaticTask({ task }: { task: any }) {
+  return (
+    <div className="bg-white p-5 rounded-xl shadow-sm border border-gray-100 group">
+      <div className="flex justify-between items-start mb-2">
+        <div className="flex items-start gap-2">
+          <h4 className="text-sm font-semibold text-gray-800 leading-snug">
+            {task.title}
+          </h4>
+        </div>
+        {/* No drag handle or MoreHorizontal button for static tasks */}
       </div>
       {task.assignee && (
         <div className="mt-3 flex items-center gap-2">
