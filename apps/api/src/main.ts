@@ -9,8 +9,16 @@ async function bootstrap() {
   const config = app.get(ConfigService);
 
   app.use(helmet());
+  const rawOrigins = config.get<string>("WEB_ORIGIN", "http://localhost:3000");
+  const allowedOrigins = rawOrigins.split(",").map((o) => o.trim());
   app.enableCors({
-    origin: config.get<string>("WEB_ORIGIN", "http://localhost:3000"),
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error(`CORS: origin ${origin} not allowed`));
+      }
+    },
     credentials: true
   });
   app.setGlobalPrefix("api");
