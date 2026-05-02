@@ -32,13 +32,14 @@ export function Shell({ children, title }: { children: React.ReactNode; title: s
   }
   
   const role = session?.user?.role;
+  const isClient = role === "CLIENT";
   const nav = [
     { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
     { href: "/projects", label: "Projects", icon: FolderOpen },
-    ...(role !== "CLIENT" ? [{ href: "/time", label: "Time", icon: Clock }] : []),
-    { href: "/billing", label: "Billing", icon: CreditCard },
-    ...(role !== "CLIENT" ? [{ href: "/team", label: "Team", icon: Users }] : []),
-    { href: "/settings", label: "Settings", icon: Settings },
+    ...(!isClient ? [{ href: "/time", label: "Time", icon: Clock }] : []),
+    ...(!isClient ? [{ href: "/billing", label: "Billing", icon: CreditCard }] : []),
+    ...(!isClient ? [{ href: "/team", label: "Team", icon: Users }] : []),
+    ...(!isClient ? [{ href: "/settings", label: "Settings", icon: Settings }] : []),
     { href: "/profile", label: "Profile", icon: User },
     ...(role === "ADMIN" ? [{ href: "/admin", label: "Admin", icon: ShieldCheck }] : [])
   ];
