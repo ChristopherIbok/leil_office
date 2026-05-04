@@ -38,37 +38,21 @@ export function FilesPanel({ projectId, files: initialFiles }: FilesPanelProps) 
 
     setUploading(true);
     try {
-      // Get presigned URL
-      const { uploadUrl, key, fileUrl } = await apiFetch<{ uploadUrl: string; key: string; fileUrl: string }>("/files/presign", {
-        method: "POST",
-        body: JSON.stringify({
-          name: selectedFile.name,
-          mimeType: selectedFile.type,
-          projectId
-        })
-      }, session.accessToken);
+      const form = new FormData();
+      form.append("file", selectedFile);
+      form.append("projectId", projectId);
 
-      // Upload to S3
-      await fetch(uploadUrl, {
-        method: "PUT",
-        body: selectedFile,
-        headers: { "Content-Type": selectedFile.type }
+      const res = await fetch(`/api/files/upload`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${session.accessToken}` },
+        body: form,
       });
-
-      // Create file record
-      const newFile = await apiFetch<File>("/files", {
-        method: "POST",
-        body: JSON.stringify({
-          name: selectedFile.name,
-          url: fileUrl,
-          key,
-          mimeType: selectedFile.type,
-          size: selectedFile.size,
-          projectId
-        })
-      }, session.accessToken);
-
-      setFiles((prev) => [...prev, newFile]);
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error((err as any).error ?? `Upload failed (${res.status})`);
+      }
+      const uploaded = await res.json() as { id: string; url: string; filename: string };
+      setFiles((prev) => [...prev, { id: uploaded.id, url: uploaded.url, name: uploaded.filename, version: 1, mimeType: selectedFile.type }]);
     } catch (err) {
       console.error("Upload failed:", err);
       alert("Failed to upload file");

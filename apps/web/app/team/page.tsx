@@ -5,7 +5,7 @@ import { Users as UsersIcon, Mail, Trash2 } from "lucide-react";
 import { Shell } from "../../components/shell";
 import { AuthGate } from "../../components/auth-gate";
 import { useAuthStore } from "../../store/auth-store";
-import { apiFetch } from "../../lib/api";
+import { apiFetch, formatRole } from "../../lib/api";
 
 interface TeamMember {
   id: string;
@@ -33,8 +33,8 @@ export default function TeamPage() {
 
   async function fetchTeam() {
     try {
-      const data = await apiFetch("/users", {}, session!.accessToken);
-      setMembers(data as TeamMember[]);
+      const data = await apiFetch<TeamMember[]>("/users/staff", {}, session!.accessToken);
+      setMembers(data);
     } catch (e) {
       console.error(e);
     } finally {
@@ -76,13 +76,26 @@ export default function TeamPage() {
 
   const getRoleBadge = (_role: string) => "bg-brand/10 text-brand";
 
+  if (session?.user?.role === "CLIENT") {
+    return (
+      <>
+        <AuthGate />
+        <Shell title="Team">
+          <div className="flex flex-col items-center justify-center py-24 text-center">
+            <p className="text-sm text-muted">You don't have access to this page.</p>
+          </div>
+        </Shell>
+      </>
+    );
+  }
+
   return (
     <>
       <AuthGate />
       <Shell title="Team">
         <div className="mb-6">
           <h1 className="text-xl font-semibold">Team</h1>
-          <p className="text-sm text-muted">Manage your team members</p>
+          <p className="text-sm text-muted">Internal team only — clients are external guests and not listed here</p>
         </div>
 
         <div className="rounded-md border border-line bg-white">
@@ -112,7 +125,7 @@ export default function TeamPage() {
                   </div>
                   <div className="flex items-center gap-2">
                     <span className={`rounded-md px-2 py-1 text-xs font-semibold ${getRoleBadge(member.role)}`}>
-                      {member.role.replace("_", " ")}
+                      {formatRole(member.role)}
                     </span>
                     {session?.user?.role === "ADMIN" && member.id !== session.user.id && (
                       <button
@@ -165,7 +178,6 @@ export default function TeamPage() {
                 className="rounded-md border border-line px-3 py-2 text-sm"
               >
                 <option value="TEAM_MEMBER">Team Member</option>
-                <option value="CLIENT">Client</option>
                 <option value="ADMIN">Admin</option>
               </select>
               {inviteError && <p className="sm:col-span-2 text-sm text-red-600">{inviteError}</p>}
